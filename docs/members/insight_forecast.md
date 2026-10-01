@@ -33,6 +33,20 @@ Input đơn hàng luôn đi qua `src/dash_app/shared_data.py`, đọc từ `data
 
 RFM hiện tại: snapshot = ngày đơn hàng mới nhất (2024-12-30) + 1 ngày; 18.223 khách hàng; Recency tính bằng ngày, Frequency = số Order ID, Monetary = tổng Sales.
 
+## Kế hoạch dùng các file đã JOIN trong data/processed
+
+| File | Dùng cho insight/forecast gì | Bước làm |
+|---|---|---|
+| `rfm_customers.csv` | EDA segment trực tiếp (không chạy lại code): mô tả từng segment, nhóm giá trị cao/rủi ro, đối chiếu `Manager` | Đọc file → viết insight (quan sát + diễn giải + khuyến nghị) |
+| `monthly_sales.csv` | Train/test forecast theo thời gian; baseline (tháng gần nhất/trung bình trượt) vs Linear Regression; metric MAE/RMSE | Chia train/test theo thời gian, xử lý tháng 2019–2020 bằng 0 |
+| `orders_enriched.csv` | Insight hiệu suất theo người phụ trách Region; bổ sung bảng RFM hiển thị thêm cột `Manager` | Phối hợp Khoa nối cột vào trang Tổng quan |
+| `walmart_weekly_enriched.csv` | Forecast theo tuần; đo ảnh hưởng holiday/markdown/nhiên liệu/CPI tới doanh số (mô hình đa biến so với đơn biến hiện tại) | EDA theo Store/Dept trước khi modeling |
+| `bigmart_cleaned.csv` | Insight mặt hàng/cửa hàng (`Outlet_Age`, `Outlet_Size`, `Item_Type`); không dùng cho forecast chuỗi thời gian vì thiếu cột thời gian giao dịch | Phân tích chéo Item × Outlet |
+
+## Vì sao không có bảng merge duy nhất
+
+Các bảng khác grain: dòng đơn hàng (71k) vs store/dept/tuần (421k) vs item/cửa hàng (8,5k); khác quốc gia và khác phủ thời gian; không có khóa chung ngoài Country/Region mờ. Ép merge (cross join hoặc nhồi null) sẽ gây double-count và null hàng loạt, làm sai toàn bộ KPI/RFM/forecast. Vì vậy mỗi domain giữ fact riêng + dimension dùng chung (star-schema theo domain): dashboard đọc fact chính, phân tích sâu đọc từng mart riêng.
+
 ## Việc cần hoàn thiện: RFM và insight
 
 - [ ] Xác nhận định nghĩa nghiệp vụ của Recency, Frequency, Monetary và ngày snapshot với nhóm.

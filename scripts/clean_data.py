@@ -25,7 +25,9 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.shared.data_cleaning import (
+    build_monthly_sales,
     build_orders_union,
+    build_rfm_export,
     clean_bigmart,
     clean_orders,
     clean_people,
@@ -83,6 +85,12 @@ def run_pipeline() -> dict:
     bigmart = clean_bigmart(
         RAW_DIR / "bigmart_train.csv", PROCESSED_DIR / "bigmart_cleaned.csv")
 
+    # 5. Bảng giao cho Insight & Forecast: RFM kèm Manager + chuỗi tháng.
+    rfm_export = build_rfm_export(orders_union, people)
+    rfm_export.to_csv(PROCESSED_DIR / "rfm_customers.csv", index=False)
+    monthly = build_monthly_sales(orders_union)
+    monthly.to_csv(PROCESSED_DIR / "monthly_sales.csv", index=False)
+
     for tmp in ["_tmp_global.csv", "_tmp_mid.csv", "_tmp_recent.csv"]:
         tmp_path = PROCESSED_DIR / tmp
         if tmp_path.exists():
@@ -93,6 +101,8 @@ def run_pipeline() -> dict:
         "orders_enriched": len(orders_enriched),
         "walmart_weekly_enriched": len(walmart_enriched),
         "bigmart": len(bigmart),
+        "rfm_customers": len(rfm_export),
+        "monthly_sales": len(monthly),
     }
 
 

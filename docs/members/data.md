@@ -46,6 +46,20 @@ Xuất phát: Global Superstore 2012–2015 (cũ) + 2 file từng rớt mạng (
 
 > Biểu đồ/dự báo trên dashboard vẽ từ `cleaned_data.csv`. Các file JOIN ngang là kết quả minh hoạ đã xuất, hiện chưa nối vào visual.
 
+## Kế hoạch bảng bàn giao cho thành viên
+
+| Bảng | Nội dung | Giao cho | Trạng thái |
+|---|---|---|---|
+| `cleaned_data.csv` | Fact 71.391 dòng, schema 10 cột | Khoa (dashboard), Duy (RFM/forecast input) | ✅ Xong |
+| `orders_enriched.csv` | UNION + `Manager` (LEFT JOIN People) | Khoa (thêm cột Manager vào bảng RFM), Duy (insight theo người phụ trách) | ✅ File xong, ⏳ chờ nối vào bảng hiển thị |
+| `rfm_customers.csv` | 18.223 khách: R/F/M, score, Segment, Country/Region, Manager | Duy (EDA segment, không cần chạy lại code) | ✅ Xong |
+| `monthly_sales.csv` | 156 tháng: Sales/Profit/Orders/Customers (tháng 2019–2020 = 0, đúng bản chất lỗ dữ liệu) | Duy (train/test forecast theo thời gian) | ✅ Xong |
+| `walmart_weekly_enriched.csv` | 421.570 dòng store/dept/tuần + features + stores | Duy (forecast theo tuần, phân tích holiday/markdown) | ✅ Xong |
+| `bigmart_cleaned.csv` | 8.523 dòng Item×Outlet + `Outlet_Age` | Duy (insight sản phẩm/cửa hàng) | ✅ Xong |
+| `people_cleaned.csv`, `walmart_*_cleaned.csv` | Bảng dimension đã chuẩn hoá | Dùng chung khi cần tra cứu | ✅ Xong |
+
+Quy tắc bảng mới: tên file nói rõ grain (khách/tháng/tuần), không merge các grain khác nhau vào một bảng, mọi bảng đều tái tạo bằng `scripts/clean_data.py`.
+
 ## Schema đầu ra bắt buộc (hợp đồng tích hợp)
 
 ```text

@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.shared.rfm_utils import build_rfm_table
+
 
 REQUIRED_COLUMNS = [
     "Order ID", "Order Date", "Customer ID", "Country", "Region",
@@ -246,3 +248,25 @@ def join_walmart_weekly(train: pd.DataFrame, features: pd.DataFrame,
             enriched["IsHoliday_feat"])
         enriched = enriched.drop(columns=["IsHoliday_feat"])
     return enriched.merge(stores, on="Store", how="left")
+
+
+def build_rfm_export(orders: pd.DataFrame, people: pd.DataFrame) -> pd.DataFrame:
+    """Bảng RFM kèm Manager (JOIN People ON Region) để Insight EDA segment
+    mà không cần chạy lại code. Snapshot = ngày đơn mới nhất + 1 ngày."""
+    rfm = build_rfm_table(orders)
+    managers = people.rename(columns={"Person": "Manager"})
+    return rfm.merge(managers, on="Region", how="left")
+
+
+def build_monthly_sales(orders: pd.DataFrame) -> pd.DataFrame:
+    """Chuỗi doanh thu/lợi nhuận/đơn/khách theo tháng cho forecast
+    (train/test split theo thời gian)."""
+    df = orders.copy()
+    df["Order Date"] = pd.to_datetime(df["Order Date"])
+    monthly = df.set_index("Order Date").resample("MS").agg(
+        Sales=("Sales", "sum"),
+        Profit=("Profit", "sum"),
+        Orders=("Order ID", "nunique"),
+        Customers=("Customer ID", "nunique"),
+    ).reset_index().rename(columns={"Order Date": "Month"})
+    return monthly

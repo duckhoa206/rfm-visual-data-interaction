@@ -35,7 +35,8 @@ rfm-visual-data-interaction/
 │   └── processed/
 │       ├── cleaned_data.csv # Fact duy nhất dashboard đọc (UNION 2012–2024)
 │       ├── orders_enriched.csv, walmart_weekly_enriched.csv,
-│       └── bigmart_cleaned.csv, people_cleaned.csv  # Bảng JOIN minh hoạ
+│       ├── bigmart_cleaned.csv, people_cleaned.csv,  # Bảng JOIN minh hoạ
+│       └── rfm_customers.csv, monthly_sales.csv      # Bảng giao Insight & Forecast
 ├── scripts/
 │   └── clean_data.py        # Full pipeline: làm sạch + JOIN toàn bộ bảng
 ├── src/
