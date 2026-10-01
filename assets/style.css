@@ -1,0 +1,182 @@
+/* Giao diện duy nhất của dashboard (màu, font, kích thước sửa ở đây). */
+
+body {
+  background: #0B1220;
+  color: #E8EEF8;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.app-container {
+  max-width: 100%;
+  padding: .75rem 1rem 2rem;
+}
+
+/* Header cố định: logo + bộ lọc */
+.app-header {
+  background: linear-gradient(120deg, #111E32, #0D1829);
+  border: 1px solid #29415F;
+  border-radius: 14px;
+  padding: .8rem 1.2rem;
+  margin-bottom: .75rem;
+}
+
+.header-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.header-brand-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.brand-university { color: #E8EEF8; font-size: .62rem; line-height: 1.2; margin: 0 0 .2rem; }
+.brand-school { color: #E8EEF8; font-size: .78rem; font-weight: 800; line-height: 1.2; margin: 0; }
+.brand-divider { border: 0; border-top: 1px solid #D9E1EC; margin: .3rem 0; opacity: .8; }
+.brand-english { color: #E8EEF8; font-size: .6rem; line-height: 1.2; margin: 0 0 .3rem; }
+.brand-title { color: #39B6FF; font-size: .85rem; font-weight: 700; line-height: 1.25; margin: 0; }
+
+/* Hàng thân: sidebar + nội dung */
+.body-row {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Sidebar dọc */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #111C2E;
+  border: 1px solid #253753;
+  border-radius: 12px;
+  padding: .6rem;
+  position: sticky;
+  top: .75rem;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar.collapsed .sidebar-label {
+  display: none;
+}
+
+.sidebar-toggle {
+  width: 100%;
+  background: #18253A;
+  color: #E8EEF8;
+  border: 1px solid #253753;
+  border-radius: 8px;
+  padding: .3rem 0;
+  margin-bottom: .5rem;
+  cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+  border-color: #39B6FF;
+}
+
+.sidebar-nav {
+  gap: .25rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  color: #94A3B8;
+  font-size: .85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: .5rem .6rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sidebar-link:hover {
+  color: #39B6FF;
+  background: #18253A;
+}
+
+.sidebar-link.active {
+  color: #E8EEF8;
+  background: #1E3A5F;
+}
+
+.sidebar-icon {
+  font-size: 1.1rem;
+  width: 1.5rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Bộ lọc */
+.filter-bar { margin-bottom: 0; }
+
+.filter-label { color: #B9C7DA; font-size: .75rem; margin-bottom: .2rem; }
+
+.scope-panel { display: flex; gap: 1rem; align-items: center; margin-top: .4rem; }
+.scope-caption { color: #94A3B8; font-size: .62rem; font-weight: 700; letter-spacing: .1em; }
+.scope-item { color: #E8EEF8; font-size: .8rem; }
+
+/* KPI */
+.kpi-row { margin-bottom: .75rem; }
+.kpi-card {
+  background: linear-gradient(135deg, #111C2E 0%, #18253A 100%);
+  border: 1px solid #253753;
+  border-radius: 12px;
+}
+.kpi-card .card-body { padding: .6rem .8rem; }
+.kpi-title { color: #94A3B8; font-size: .78rem; }
+.kpi-value { color: #E8EEF8; font-size: 1.35rem; font-weight: 700; }
+
+/* Thẻ nội dung */
+.section-card {
+  background: #111C2E;
+  border: 1px solid #253753;
+  border-radius: 12px;
+  margin-bottom: .75rem;
+}
+.section-card .card-body { padding: .8rem 1rem; }
+
+.section-title {
+  color: #E8EEF8;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  margin-bottom: .25rem;
+}
+
+.page-title {
+  color: #E8EEF8;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: .5rem;
+}
+
+.caption { color: #94A3B8; font-size: .88rem; }
+
+.chart-title {
+  color: #E8EEF8;
+  font-size: .88rem;
+  font-weight: 600;
+  margin: .5rem 0 .25rem;
+}
+
+@media (max-width: 992px) {
+  .app-container { padding: .75rem .75rem 2rem; }
+  .body-row { flex-direction: column; }
+  .sidebar { width: 100%; position: static; }
+  .sidebar.collapsed { width: 100%; }
+  .sidebar.collapsed .sidebar-label { display: inline; }
+  .brand-title { font-size: .75rem; }
+  .kpi-value { font-size: 1.1rem; }
+}
