@@ -1,97 +1,72 @@
-# Phân công Data Pipeline
+# Phân công Data Pipeline + EDA
 
-**Phụ trách:**   
-**Mục tiêu:** thu thập, kiểm tra và làm sạch dữ liệu bán hàng để tạo một nguồn dữ liệu đáng tin cậy cho toàn bộ dashboard và phân tích RFM.
+**Phụ trách:** Nguyễn Văn Xuân An
+**Mục tiêu:** thu thập, kiểm tra (EDA) và làm sạch dữ liệu bán hàng để tạo nguồn đáng tin cậy cho dashboard và RFM. Quy tắc nhóm: **không commit/push file dữ liệu lên origin** — data trao đổi qua link Drive (xem README mục “Quy tắc dữ liệu”).
 
 ## Phạm vi sở hữu
 
 ```text
-data/raw/                         Dữ liệu nguồn; không đưa dữ liệu thật nhạy cảm lên Git
-data/processed/                   Nơi lưu dữ liệu do pipeline sinh ra; dashboard chỉ đọc từ đây
-data/processed/cleaned_data.csv   Dữ liệu sạch bàn giao cho Dashboard và Insight & Forecast
-scripts/generate_mock_data.py     Sinh dữ liệu giả phục vụ phát triển UI
-scripts/clean_data.py             Điểm chạy pipeline raw → clean
-src/shared/data_cleaning.py       Quy tắc làm sạch và chuẩn hoá schema
-src/shared/data_loader.py         Hợp đồng đọc dữ liệu đã làm sạch
+data/raw/                         Dữ liệu nguồn (chi tiết từng file: data/raw/SOURCES.md)
+data/processed/                   Output pipeline; dashboard chỉ đọc từ đây
+data/processed/cleaned_data.csv   UNION 3 nguồn, 71.391 dòng, schema 10 cột, 2012→2024
+scripts/clean_data.py             Điểm chạy full pipeline: làm sạch + JOIN
+src/shared/data_cleaning.py       Quy tắc làm sạch, EDA đã chốt và hàm JOIN
+src/dash_app/shared_data.py       Loader duy nhất dashboard dùng (không đọc raw)
 ```
 
-Không sửa trực tiếp các file trong `src/pages/`; phần đó do Dashboard phụ trách. Khi schema thay đổi, thông báo nhóm trước khi sửa `data_loader.py`.
+Luồng bàn giao: `data/raw/*.csv → scripts/clean_data.py → data/processed/*.csv → dashboard`. `cleaned_data.csv` tái tạo được, không sửa tay. Sau khi đổi dataset phải chạy lại pipeline và báo Dashboard/Insight trước khi bàn giao.
 
-## Phạm vi làm việc và luồng bàn giao
+## Quá trình cào dữ liệu (2026-10-01)
 
-Data phụ trách từ file CSV nguồn trong `data/raw/` đến file chuẩn hoá trong `data/processed/`. Dashboard, RFM và Forecast chỉ nhận dữ liệu qua `src/shared/data_loader.py`; không đọc raw và không tự làm sạch lại dữ liệu.
+Xuất phát: Global Superstore 2012–2015 (cũ) + 2 file từng rớt mạng (`walmart_train.csv` bị cắt cụt 11.173 dòng, `bigmart_train.csv` đủ).
 
-```text
-data/raw/*.csv
-	↓ scripts/clean_data.py
-data/processed/cleaned_data.csv
-	↓ src/shared/data_loader.py
-Dashboard / RFM / Forecast
-```
+1. Tải bù `walmart_train.csv` bản full 12,8MB từ HuggingFace (`large-traversaal/Walmart-sales`) → đủ 421.570 dòng, hết lỗi dòng cuối.
+2. Tìm nguồn gần 2026 nhất mà vẫn RFM được: chốt `superstore_2021_2024.csv` (GitHub venunelaturi, 10.194 dòng, 2021-01-03 → 2024-12-30). Các nguồn 2025 (Đức) và 2026 (Ấn Độ) bị loại vì đơn quốc gia và/hoặc thiếu Customer ID.
+3. Lấp lỗ 2016–2020: thử `An-j96/SuperstoreData` (trùng ~60% giao dịch với file dưới → loại, tránh double-count), `global-sales-100k` (thiếu Category/Region → loại), Kaggle (cần auth), Scribd (PDF) → chốt `superstore_2015_2018.csv` (GitHub larryt2003, 9.994 dòng, 2015–2018, 0 trùng Order ID/key với Global).
+4. Kết quả: phủ liên tục 2012–2018 + 2021–2024; chỉ còn trống 2019–2020 (không nội suy, giữ trung thực).
 
-`data/processed/cleaned_data.csv` là output có thể tái tạo, không chỉnh tay. Sau khi đổi dataset, phải chạy lại pipeline và kiểm tra các phần sử dụng schema trước khi bàn giao.
+## Kết quả EDA (số liệu đã chốt)
 
-## Phần nền tảng đã có
+| Bảng | Quy mô / phủ thời gian | Phát hiện chính | Xử lý |
+|---|---|---|---|
+| Global Orders | 51.290 dòng, 24 cột, 2012–2015, 165 nước, 17.415 khách | `Postal Code` null 41.296; 0 trùng; Sales<0: 0; Qty≤0: 0 | Bỏ cột ngoài schema; giữ Profit âm (đơn lỗ thật) |
+| Superstore 2015–2018 | 9.994 dòng, 2015–2018, Mỹ | Tên cột `Sales`/`Profit` dính khoảng trắng; 0 trùng với Global | Strip tên cột rồi UNION |
+| Superstore 2021–2024 | 10.194 dòng, 2021–2024, Mỹ + Canada 200 dòng, 804 khách | 0 null/trùng; Discount 0–0,8; Profit âm 1.901 dòng | Giữ đơn lỗ; alias `Country/Region` → `Country` |
+| Walmart train | 421.570 dòng, 2010–2012, 45 stores × 81 depts | 1.285 `Weekly_Sales` âm (hoàn tiền) | Giữ nguyên, ghi chú |
+| Walmart features | 8.190 = 45×182 tuần, tới 07/2013 | Markdown null ~50%, CPI/Unemployment null 585 (tuần 2013 ngoài train) | Giữ null; sau JOIN còn 0 null |
+| BigMart | 8.523 dòng, không có cột thời gian | `Item_Weight` null 1.463; `Outlet_Size` null 2.410; `Fat_Content` 5 biến thể; `Visibility` = 0 có 526 dòng | Chuẩn hoá 2 giá trị; Visibility 0 → impute theo Item; Weight → impute theo Item; Size → mode theo Outlet_Type; thêm `Outlet_Age` (mốc 2013) → 0 null |
+| People | 24 dòng Region → người phụ trách | Tên dính ký tự thay thế encoding (giữ nguyên); khớp 22/23 Region Global | LEFT JOIN, giữ đơn không khớp |
 
-- [x] Mock data (mẫu để test) 5.000 đơn hàng, 400 khách hàng và nhiều quốc gia/khu vực.
-- [x] Script `generate_mock_data.py` tạo file `data/raw/mock_orders.csv`.
-- [x] Pipeline `clean_data.py` đọc file raw và tạo `data/processed/cleaned_data.csv`.
-- [x] Làm sạch cơ bản: chuẩn hoá tên cột, ép kiểu ngày/số, loại missing value, duplicate và Quantity không hợp lệ.
-- [x] Hỗ trợ alias phổ biến, ví dụ `Market` → `Region`, `Revenue` → `Sales`.
+## JOIN và output pipeline
 
-## Việc cần hoàn thiện
+- `cleaned_data.csv` (71.391): UNION 3 nguồn đơn hàng (51.280 + 9.994 + 10.194, khử 77 trùng liên nguồn), schema 10 cột không đổi, 0 null.
+- `orders_enriched.csv` (71.391): UNION LEFT JOIN People ON Region → thêm `Manager`; null 28,7% (Region `Canada` + `Central/East/South/West` của 2 nguồn Mỹ không có trong People).
+- `walmart_weekly_enriched.csv` (421.570): train LEFT JOIN features ON (Store, Date) + LEFT JOIN stores (star-join).
+- `bigmart_cleaned.csv` (8.523) + `people_cleaned.csv` + 3 file Walmart đã chuẩn hoá.
 
-- [ ] Thu thập/chọn dataset (thật) đáp ứng tối thiểu 5.000 dòng và có nguồn trích dẫn rõ ràng.
-- [ ] Lập data dictionary: tên cột, ý nghĩa, kiểu dữ liệu, đơn vị và quy tắc tính.
-- [ ] Kiểm tra chất lượng dữ liệu: missing values, duplicate, ngày bất thường, Sales/Quantity/Profit bất thường.
-- [ ] Xác định và ghi lại quy tắc xử lý outlier; không tự ý xoá outlier nếu chưa có lý do nghiệp vụ.
-- [ ] Thực hiện EDA bằng Matplotlib/Seaborn, lưu biểu đồ/kết luận để dùng trong báo cáo đồ án.
-- [ ] Cập nhật `COLUMN_ALIASES` hoặc pipeline nếu schema dataset thật khác mock data.
-- [ ] Chạy lại pipeline và xác nhận dashboard/RFM đọc được dữ liệu thật.
+> Biểu đồ/dự báo trên dashboard vẽ từ `cleaned_data.csv`. Các file JOIN ngang là kết quả minh hoạ đã xuất, hiện chưa nối vào visual.
 
-## Hợp đồng bàn giao
-
-Hợp đồng cần phân biệt dữ liệu nguồn và dữ liệu sau làm sạch. Người tìm dữ liệu không bắt buộc phải tìm dataset có đúng tên cột, thứ tự cột hoặc đúng định dạng như dữ liệu mẫu. Dataset nguồn chỉ cần có thông tin tương đương và có thể ánh xạ được về schema chuẩn.
-
-### Schema đầu ra bắt buộc
-
-File `data/processed/cleaned_data.csv` hiện cần có các cột:
+## Schema đầu ra bắt buộc (hợp đồng tích hợp)
 
 ```text
 Order ID, Order Date, Customer ID, Country, Region,
 Category, Sub-Category, Sales, Quantity, Profit
 ```
 
-Quy ước dữ liệu:
-
-- `Order Date` phải parse được thành ngày.
-- `Sales`, `Quantity`, `Profit` là số; Profit được phép âm.
-- `Sales >= 0`, `Quantity > 0`.
-- Một `Order ID` có thể có nhiều dòng sản phẩm, vì vậy không được xoá trùng chỉ dựa trên `Order ID`.
-
-Đây là schema đầu ra, không phải yêu cầu dataset nguồn phải giống hệt dữ liệu mẫu. Schema này là hợp đồng tích hợp vì `data_cleaning.py`, `data_loader.py`, RFM, filter chung và các biểu đồ hiện đang phụ thuộc vào nó.
-
-### Cách xử lý dataset khác mẫu
-
-- Khác tên cột nhưng cùng ý nghĩa: bổ sung ánh xạ trong `COLUMN_ALIASES` hoặc cấu hình tương đương.
-- Khác kiểu dữ liệu hoặc đơn vị: cập nhật bước chuẩn hoá, ghi rõ quy tắc chuyển đổi và kiểm tra lại chất lượng dữ liệu.
-- Thiếu trường có thể suy dẫn một cách đáng tin cậy: chỉ tạo trong pipeline khi có quy tắc nghiệp vụ rõ ràng; không tự điền giá trị giả.
-- Thiếu trường không thể suy dẫn: phải thống nhất giảm hoặc thay đổi tính năng phụ thuộc vào trường đó, rồi cập nhật `REQUIRED_COLUMNS`, pipeline, loader, RFM/forecast và các page liên quan.
-
-Sau mọi thay đổi schema, người phụ trách Data phải thông báo Dashboard và Insight & Forecast, chạy lại pipeline, kiểm tra các hàm/biểu đồ liên quan và cập nhật tài liệu trước khi bàn giao.
-
-Không nên bỏ qua kiểm tra schema để "cho chạy được": thiếu hoặc đổi nghĩa một cột có thể làm sai RFM, bộ lọc, KPI, bản đồ và dự báo.
+Quy ước: `Order Date` parse được; `Sales`/`Quantity`/`Profit` là số, Profit được phép âm; `Sales >= 0`, `Quantity > 0`; một `Order ID` có thể nhiều dòng sản phẩm nên không xoá trùng chỉ theo `Order ID`. Dataset nguồn chỉ cần ánh xạ được về schema này qua `COLUMN_ALIASES`; thiếu trường không suy dẫn được thì thống nhất giảm tính năng, không tự điền giá trị giả.
 
 ## Lệnh sử dụng
 
 ```cmd
-python scripts\generate_mock_data.py
 python scripts\clean_data.py
-python scripts\clean_data.py data/raw/ten_file_that.csv
 ```
+
+(Tái tạo toàn bộ output. Lệnh tải lại từng file raw xem `data/raw/SOURCES.md`.)
 
 ## Tiêu chí hoàn thành
 
-- Có dữ liệu sạch, tái tạo được bằng script và đủ điều kiện đầu vào cho dashboard.
-- Có data dictionary và báo cáo chất lượng/EDA.
-- Bàn giao schema ổn định cho Dashboard và Insight & Forecast.
+- [x] Dataset ≥ 5.000 dòng/nhiều bảng, có nguồn trích dẫn (`SOURCES.md`).
+- [x] EDA + quy tắc làm sạch/JOIN đã chốt (bảng trên).
+- [x] Pipeline tái tạo 1 lệnh, dashboard đọc được dữ liệu mới.
+- [ ] Lập data dictionary chi tiết từng cột cho báo cáo đồ án.
+- [ ] Vẽ biểu đồ EDA bằng Matplotlib/Seaborn lưu vào báo cáo.

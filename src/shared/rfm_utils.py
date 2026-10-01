@@ -2,8 +2,9 @@
 Logic tính RFM DÙNG CHUNG cho toàn bộ dashboard.
 
 QUAN TRỌNG: đây là file duy nhất được phép chứa công thức tính RFM.
-Mọi trang trong src/pages/ chỉ được GỌI các hàm ở đây, không được
-tự viết lại công thức riêng -> tránh lệch số liệu giữa các tab.
+Mọi trang trong src/dash_app/pages/ chỉ được GỌI các hàm ở đây (qua
+src/dash_app/shared_data.py), không được tự viết lại công thức riêng
+-> tránh lệch số liệu giữa các trang.
 """
 
 import pandas as pd

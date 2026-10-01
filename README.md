@@ -12,18 +12,18 @@
 
 ## Công nghệ sử dụng
 
-- Python 3.12+ và Streamlit
+- Python 3.12+, Dash + dash-bootstrap-components
 - Pandas, NumPy: xử lý dữ liệu
 - Plotly: biểu đồ và bản đồ tương tác
 - Scikit-learn: mô hình dự báo
 
-## Bảng phân công (cập nhật sau)
+## Bảng phân công
 
 | Thành viên | MSSV | Hướng dẫn | Phụ trách |
 | --- | --- | --- | --- |
-| Phạm Đức Khoa | 24149170 | [duc_khoa](docs/members/dashboard.md) | Giao diện, liên kết các phần |
-| Phạm Quốc Duy | 24133008 | [cập nhật sau](docs/members/) | cập nhật sau |
-| Nguyễn Văn Xuân An | 24133002 | [cập nhật sau](docs/members/) | cập nhật sau |
+| Phạm Đức Khoa | 24149170 | [dashboard](docs/members/dashboard.md) | Dashboard Hub-and-Spoke, liên kết các phần |
+| Phạm Quốc Duy | 24133008 | [insight_forecast](docs/members/insight_forecast.md) | RFM, insight, dự báo |
+| Nguyễn Văn Xuân An | 24133002 | [data](docs/members/data.md) | Data pipeline, EDA |
 
 
 ## Cấu trúc dự án
@@ -48,6 +48,8 @@ rfm-visual-data-interaction/
 │   └── shared/              # data_cleaning, data_service, rfm_utils, theme
 ├── assets/
 │   └── style.css            # Toàn bộ màu sắc/font/kích thước sửa ở 1 nơi
+├── docs/
+│   └── members/             # dashboard.md (Khoa), data.md (An), insight_forecast.md (Duy)
 ├── requirements.txt
 └── README.md
 ```
@@ -73,7 +75,7 @@ Dashboard chỉ đọc `data/processed/cleaned_data.csv` (qua `src/dash_app/shar
 
 ## Cài đặt và chạy dự án
 
-Cài đặt môi trường ảo của Pyhton cho dự án:
+Cài đặt môi trường ảo của Python cho dự án:
 Thực hiện tại thư mục gốc của dự án (chạy 1 lần).
 
 ```cmd
@@ -81,8 +83,8 @@ py -3.12 -m venv .venv
 .venv\Scripts\activate.bat
 python -m pip install -r requirements.txt
 ```
-(khi có dataset thật sẽ update sau)
-Làm sạch toàn bộ dữ liệu (UNION + JOIN) và chạy dashboard Hub-and-Spoke:
+Lấy dữ liệu từ link Drive (mục “Quy tắc dữ liệu”), giải nén đúng cấu trúc `data/`,
+làm sạch toàn bộ (UNION + JOIN) và chạy dashboard Hub-and-Spoke:
 
 ```cmd
 python scripts\clean_data.py

@@ -81,7 +81,7 @@ def apply_filters(
     end_date: pd.Timestamp | str | None = None,
     segments: list | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Lọc đơn hàng + RFM theo filter. Logic y hệt dashboard_context.get_filtered_data().
+    """Lọc đơn hàng + RFM theo filter. Mọi trang dashboard đọc qua hàm này.
 
     None nghĩa là "chọn tất cả". Trả về (orders_filtered, rfm_filtered).
     """

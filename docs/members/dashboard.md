@@ -1,57 +1,57 @@
-# Phân công Dashboard Streamlit
+# Phân công Dashboard Hub-and-Spoke (Dash)
 
-**Phụ trách:** Phạm Đức Khoa  
-**Mục tiêu:** xây dựng giao diện Streamlit trực quan, nhất quán và tích hợp các đầu ra do phần Data và Insight & Forecast bàn giao.
+**Phụ trách:** Phạm Đức Khoa
+**Mục tiêu:** khung Hub-and-Spoke (sidebar + nhiều trang), header dùng chung (logo + bộ lọc), tích hợp đầu ra do phần Data và Insight & Forecast bàn giao. Chạy: `python src\dash_app\app.py` → `http://127.0.0.1:8050`.
 
 ## Phạm vi phụ trách
 
-- Xây dựng giao diện và trải nghiệm người dùng bằng Streamlit.
-- Duy trì các trang dashboard trong `src/pages/`.
-- Tạo biểu đồ Plotly, bản đồ tương tác và các bộ lọc dùng chung.
-- Tích hợp dữ liệu đã làm sạch, bảng RFM và kết quả dự báo vào giao diện.
+- Khung chung trong `src/dash_app/app.py`: hàng header (logo + bộ lọc) + sidebar + `dash.page_container`.
+- Sidebar tự sinh từ `dash.page_registry` (`src/dash_app/components/sidebar.py`): icon + tên mục, highlight trang hiện tại, nút ☰ thu gọn/mở rộng.
+- 4 trang trong `src/dash_app/pages/`, mỗi trang tự chứa `layout()` + callback, chỉ đọc dữ liệu qua `src/dash_app/shared_data.py`.
+- Hàm dựng biểu đồ/KPI dùng chung trong `src/dash_app/components/charts.py`; toàn bộ màu/font/kích thước trong `assets/style.css`.
 - Không sở hữu logic làm sạch dữ liệu, công thức RFM hay thuật toán dự báo.
 
 ## Kiến trúc cần tuân thủ
 
 ```text
-src/app.py                         Trang chủ; Streamlit tự nhận các page
-src/pages/1_overview.py            Trang tổng quan bán hàng
-src/pages/2_rfm_segment.py         Trang phân khúc khách hàng RFM
-src/pages/3_geo_analysis.py        Trang phân tích địa lý
-src/pages/4_forecast.py            Giao diện hiển thị kết quả dự báo
-src/shared/dashboard_context.py    Header, filter và context dùng chung
+src/dash_app/app.py            Khung chung: header + sidebar + page_container
+src/dash_app/config.py         PAGE_META: thêm/xóa/đổi tên/đổi thứ tự trang ở 1 chỗ
+src/dash_app/shared_data.py    ORDERS/RFM/FILTER_OPTIONS tải 1 lần, mọi trang import
+src/dash_app/pages/overview.py Trang chính /: KPI + bar/line + bảng RFM (gộp, không tiêu đề thừa)
+src/dash_app/pages/geo.py      Trang phụ /geo: choropleth / treemap / heatmap (chọn 1)
+src/dash_app/pages/rfm.py      Trang phụ /rfm: pie / scatter / box (chọn 1)
+src/dash_app/pages/forecast.py Trang phụ /forecast: thực tế + dự báo 3 tháng
+src/dash_app/components/       header.py, sidebar.py, filters.py, charts.py
+assets/style.css               Style duy nhất của dashboard
 ```
 
-Khi chạy `streamlit run src/app.py`, các file trong `src/pages/` tự xuất hiện trong menu sidebar. Mỗi file page phải tự gọi `render_page(...)`; không chỉ khai báo hàm `render(...)`.
+Mỗi trang đăng ký bằng `dash.register_page(__name__, **PAGE_META["<key>"])`. Bộ lọc ở header lưu vào `dcc.Store(id="filter-store")`; mọi trang đọc store này nên chuyển trang không reset. Không đọc trực tiếp file trong `data/raw/` từ bất kỳ trang nào.
 
 ## Input và output
 
 ### Input
 
-- Dữ liệu đơn hàng sạch từ `data/processed/cleaned_data.csv`, bảng RFM và kết quả dự báo theo schema đầu ra đã chuẩn hoá; dataset nguồn không nhất thiết phải giống tên cột của mock data.
-- `get_filtered_data()`: dữ liệu sau filter khu vực, quốc gia, thời gian và segment.
+- Fact duy nhất `data/processed/cleaned_data.csv` (UNION 2012–2024, schema 10 cột) qua `shared_data.py`; RFM tính 1 lần bằng `src/shared/rfm_utils.py`.
+- `data_service.apply_filters()`: dữ liệu sau filter khu vực, quốc gia, thời gian và segment.
 
-### Output hiện có
+### Output hiện có (10 visual)
 
-- [x] Filter nhiều cấp: khu vực → quốc gia, thời gian và RFM segment.
-- [x] Tổng quan: KPI, bar chart, line chart.
-- [x] RFM: donut chart, scatter plot, box plot và bảng chi tiết.
-- [x] Địa lý: choropleth map, treemap, heatmap.
-- [x] Trang dự báo: biểu đồ thực tế và dự báo ba tháng; mô hình là đầu ra do phần Insight & Forecast chịu trách nhiệm.
-- [x] Tối thiểu 8 biểu đồ: bar, line, donut/pie, scatter, box, choropleth, treemap và heatmap.
+- [x] Trang chính: 4 thẻ KPI, bar doanh thu theo danh mục, line xu hướng theo tháng, bảng chi tiết RFM (sort/filter native).
+- [x] Trang địa lý: choropleth theo quốc gia, treemap Region/Country/Category, heatmap Region × Category.
+- [x] Trang RFM: pie tỷ trọng segment, scatter Frequency–Monetary, box phân phối Monetary.
+- [x] Trang dự báo: line thực tế + dự báo 3 tháng (Linear Regression) kèm chú thích xu hướng/tháng.
+- [x] Trạng thái rỗng cho mọi biểu đồ + panel phạm vi (số đơn/khách sau filter).
 
 ## Việc cần hoàn thiện
 
-- [ ] Thêm biểu đồ loại thứ 9 để phần dự báo không lặp lại line chart (gợi ý: top 10 sản phẩm dạng horizontal bar hoặc histogram giá trị đơn hàng).
+- [ ] Thêm visual thứ 11 cho trang dự báo để không lặp line chart (gợi ý: top 10 sản phẩm horizontal bar hoặc histogram giá trị đơn hàng).
 - [ ] Cân nhắc drill-down/cross-filtering nếu phù hợp tiến độ.
-- [ ] Hoàn thiện UI: theme, màu sắc nhất quán, logo/tên nhóm, tooltip và trạng thái không có dữ liệu.
-- [ ] Tích hợp và kiểm tra hiển thị khi nhận schema/kết quả chính thức từ hai phần còn lại.
+- [ ] Tích hợp và kiểm tra hiển thị khi nhận metric/insight chính thức từ Insight & Forecast.
 
 ## Quy tắc tích hợp
 
-- Không đọc trực tiếp file trong `data/raw/` từ bất kỳ page nào.
-- Chỉ đọc dữ liệu đã làm sạch qua `data_loader.py` từ `data/processed/cleaned_data.csv`; không tự quy ước schema khác trong page.
-- Không viết lại công thức RFM hoặc thuật toán dự báo trong page.
-- Thống nhất schema với người phụ trách Data/Insight trước khi thay đổi cách hiển thị. Khi dataset thật khác dữ liệu mẫu hoặc thiếu trường, kiểm tra/cập nhật các filter, KPI và biểu đồ bị ảnh hưởng sau khi Data cập nhật pipeline; không giả định mọi tính năng vẫn áp dụng được.
-- Khi thêm biểu đồ, đảm bảo xử lý trường hợp DataFrame rỗng và dùng `use_container_width=True`.
-- Mỗi thay đổi nên có commit riêng, ví dụ: `feat: add top products chart`.
+- Chỉ đọc dữ liệu đã làm sạch qua `shared_data.py`; không tự quy ước schema khác trong trang.
+- Không viết lại công thức RFM hoặc thuật toán dự báo trong trang; biểu đồ mới phải gọi hàm trong `components/charts.py`.
+- Khi thêm biểu đồ, xử lý DataFrame rỗng và giữ dark theme qua `apply_chart_theme()`.
+- Thống nhất với Data/Insight trước khi đổi cách hiển thị khi schema thay đổi; không giả định mọi tính năng vẫn áp dụng được.
+- Mỗi thay đổi nên có commit riêng, ví dụ: `feat(dashboard): thêm biểu đồ top sản phẩm`.
