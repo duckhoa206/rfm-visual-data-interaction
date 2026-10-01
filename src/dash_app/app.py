@@ -26,6 +26,7 @@ app = Dash(
     title="Phân tích bán lẻ RFM | HCMUTE",
     assets_folder=str(ROOT_DIR / "assets"),
 )
+server = app.server 
 app.layout = dbc.Container(
     [
         dcc.Location(id="url"),
