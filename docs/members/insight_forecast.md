@@ -17,19 +17,19 @@ Input đơn hàng luôn đi qua `src/dash_app/shared_data.py`, đọc từ `data
 
 ## Phần nền tảng đã có
 
-- [x] `rfm_utils.py` tính Recency, Frequency, Monetary theo `Customer ID`.
-- [x] Có R/F/M score 1–5 và các segment: Champions, Loyal Customers, New Customers, At Risk, Lost, Need Attention.
-- [x] Trang RFM đã hiển thị tỷ trọng segment, scatter Frequency–Monetary, box plot và bảng chi tiết.
-- [x] Trang dự báo có Linear Regression demo, dự báo doanh thu ba tháng tiếp theo.
+- [X] `rfm_utils.py` tính Recency, Frequency, Monetary theo `Customer ID`.
+- [X] Có R/F/M score 1–5 và các segment: Champions, Loyal Customers, New Customers, At Risk, Lost, Need Attention.
+- [X] Trang RFM đã hiển thị tỷ trọng segment, scatter Frequency–Monetary, box plot và bảng chi tiết.
+- [X] Trang dự báo có Linear Regression demo, dự báo doanh thu ba tháng tiếp theo.
 
-## Danh mục biểu đồ đã làm (10 visual, dữ liệu thật 2012–2024)
+## Danh mục biểu đồ đã làm (10 visual, dữ liệu 2012–2024)
 
-| Trang | Biểu đồ | Nguồn |
-|---|---|---|
-| Tổng quan `/` | Bar doanh thu theo danh mục; line xu hướng theo tháng; bảng RFM | `build_bar_category`, `build_line_monthly` |
-| Địa lý `/geo` | Choropleth theo quốc gia; treemap Region/Country/Category; heatmap Region × Category | `build_geo_figure` |
-| RFM `/rfm` | Pie tỷ trọng segment; scatter Frequency–Monetary (size = Monetary); box phân phối Monetary | `build_rfm_figure` |
-| Dự báo `/forecast` | Line thực tế + dự báo 3 tháng (Linear Regression trên chỉ số tháng `t`), chú thích xu hướng/tháng | `build_forecast_figure` |
+| Trang                 | Biểu đồ                                                                                                       | Nguồn                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Tổng quan`/`       | Bar doanh thu theo danh mục; line xu hướng theo tháng; bảng RFM                                             | `build_bar_category`, `build_line_monthly` |
+| Địa lý`/geo`     | Choropleth theo quốc gia; treemap Region/Country/Category; heatmap Region × Category                           | `build_geo_figure`                           |
+| RFM`/rfm`           | Pie tỷ trọng segment; scatter Frequency–Monetary (size = Monetary); box phân phối Monetary                  | `build_rfm_figure`                           |
+| Dự báo`/forecast` | Line thực tế + dự báo 3 tháng (Linear Regression trên chỉ số tháng`t`), chú thích xu hướng/tháng | `build_forecast_figure`                      |
 
 RFM hiện tại: snapshot = ngày đơn hàng mới nhất (2024-12-30) + 1 ngày; 18.223 khách hàng; Recency tính bằng ngày, Frequency = số Order ID, Monetary = tổng Sales.
 
