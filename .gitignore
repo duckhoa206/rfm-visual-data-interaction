@@ -27,9 +27,7 @@ Thumbs.db
 tempCodeRunnerFile.py
 
 # Local/raw datasets. Keep the reproducible mock dataset used by the demo.
-data/raw/*
-# Keep the reproducible mock dataset tracked in the repository.
-!data/raw/mock_orders.csv
+data/*
 
 # Processed data is generated locally by the cleaning pipeline and read by the dashboard.
 data/processed/*
@@ -38,3 +36,6 @@ data/processed/*
 
 # không ignore .gitkeep giữ khung thư mục
 !**/.gitkeep
+
+# không theo dõi thư mục specs
+specs/*
