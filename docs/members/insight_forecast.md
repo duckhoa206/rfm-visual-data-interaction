@@ -1,7 +1,7 @@
 # Phân công Insight, RFM và Forecast
 
 **Phụ trách: Phạm Quốc Duy**
-**Mục tiêu:** biến dữ liệu sạch thành các phân khúc khách hàng, insight kinh doanh và dự báo doanh thu có đánh giá rõ ràng.
+**Mục tiêu:** huấn luyện và đánh giá mô hình dự báo doanh thu hoặc nhu cầu thị trường từ dữ liệu đã xử lý; bàn giao các biểu đồ dự báo để đưa lên dashboard.
 
 ## Phạm vi sở hữu
 
@@ -33,51 +33,11 @@ Input đơn hàng luôn đi qua `src/dash_app/shared_data.py`, đọc từ `data
 
 RFM hiện tại: snapshot = ngày đơn hàng mới nhất (2024-12-30) + 1 ngày; 18.223 khách hàng; Recency tính bằng ngày, Frequency = số Order ID, Monetary = tổng Sales.
 
-## Kế hoạch dùng các file đã JOIN trong data/processed
+## Kế hoạch dự báo
 
-| File | Dùng cho insight/forecast gì | Bước làm |
-|---|---|---|
-| `rfm_customers.csv` | EDA segment trực tiếp (không chạy lại code): mô tả từng segment, nhóm giá trị cao/rủi ro, đối chiếu `Manager` | Đọc file → viết insight (quan sát + diễn giải + khuyến nghị) |
-| `monthly_sales.csv` | Train/test forecast theo thời gian; baseline (tháng gần nhất/trung bình trượt) vs Linear Regression; metric MAE/RMSE | Chia train/test theo thời gian, xử lý tháng 2019–2020 bằng 0 |
-| `orders_enriched.csv` | Insight hiệu suất theo người phụ trách Region; bổ sung bảng RFM hiển thị thêm cột `Manager` | Phối hợp Khoa nối cột vào trang Tổng quan |
-| `walmart_weekly_enriched.csv` | Forecast theo tuần; đo ảnh hưởng holiday/markdown/nhiên liệu/CPI tới doanh số (mô hình đa biến so với đơn biến hiện tại) | EDA theo Store/Dept trước khi modeling |
-| `bigmart_cleaned.csv` | Insight mặt hàng/cửa hàng (`Outlet_Age`, `Outlet_Size`, `Item_Type`); không dùng cho forecast chuỗi thời gian vì thiếu cột thời gian giao dịch | Phân tích chéo Item × Outlet |
-
-## Vì sao không có bảng merge duy nhất
-
-Các bảng khác grain: dòng đơn hàng (71k) vs store/dept/tuần (421k) vs item/cửa hàng (8,5k); khác quốc gia và khác phủ thời gian; không có khóa chung ngoài Country/Region mờ. Ép merge (cross join hoặc nhồi null) sẽ gây double-count và null hàng loạt, làm sai toàn bộ KPI/RFM/forecast. Vì vậy mỗi domain giữ fact riêng + dimension dùng chung (star-schema theo domain): dashboard đọc fact chính, phân tích sâu đọc từng mart riêng.
-
-## Việc cần hoàn thiện: RFM và insight
-
-- [ ] Xác nhận định nghĩa nghiệp vụ của Recency, Frequency, Monetary và ngày snapshot với nhóm.
-- [ ] Kiểm thử RFM trên dữ liệu mới (71.391 dòng); xử lý trường hợp nhiều giá trị Recency trùng khiến `qcut` không tạo đủ nhóm.
-- [ ] Viết mô tả và hành động đề xuất cho từng segment.
-- [ ] Tạo các insight có bằng chứng: xu hướng doanh thu 2012–2024 (lưu ý lỗ 2019–2020), khu vực/danh mục nổi bật, nhóm khách hàng giá trị cao và nhóm rủi ro.
-- [ ] Mỗi insight cần có: quan sát dữ liệu, diễn giải ngắn và khuyến nghị hành động.
-
-## Việc cần hoàn thiện: Forecast
-
-- [ ] Tách logic trong `build_forecast_figure()` sang `src/shared/forecasting.py` (chuẩn bị chuỗi tháng, train, evaluate, predict); page chỉ hiển thị kết quả.
-- [ ] Tổng hợp doanh thu theo tháng, xử lý tháng bị thiếu (đặc biệt quanh 2019–2020) và xác định horizon dự báo.
-- [ ] Chia train/test theo thời gian, không chia ngẫu nhiên.
-- [ ] Đánh giá mô hình bằng ít nhất MAE và RMSE; MAPE nếu doanh thu không bằng 0.
-- [ ] So sánh Linear Regression với baseline đơn giản, ví dụ doanh thu tháng gần nhất hoặc trung bình trượt.
-- [ ] Hiển thị actual, prediction trên tập test, future forecast và metric trên dashboard.
-- [ ] Sửa cảnh báo feature name bằng cách dự đoán với DataFrame có cột `t`.
-- [ ] Ghi rõ giả định và giới hạn của mô hình; không diễn giải forecast hiện tại như kết quả chính thức (mô hình tuyến tính đơn biến, chưa tách yếu tố mùa vụ).
-
-## Hợp đồng bàn giao cho Dashboard
-
-- Data bàn giao file `data/processed/cleaned_data.csv` theo schema đầu ra đã chuẩn hoá.
-- Nếu một trường cần cho RFM/forecast không có trong dataset nguồn, không tự tạo giá trị giả. Phải thống nhất cách suy dẫn có căn cứ hoặc ghi rõ tính năng/phân tích nào không áp dụng được.
-- Hàm RFM trả về tối thiểu: `Customer ID`, `Recency`, `Frequency`, `Monetary`, `R_score`, `F_score`, `M_score`, `RFM_Score`, `Segment`.
-- Hàm forecast cần trả về dữ liệu theo tháng cho actual/test prediction/future prediction và dictionary metric.
-- Gửi nội dung insight ngắn, có thể hiển thị dưới biểu đồ: tiêu đề, phát hiện, khuyến nghị.
-
-Khi thay đổi schema đầu vào hoặc cách chuẩn hoá, phải kiểm tra lại `data_cleaning.py`, `shared_data.py`, `rfm_utils.py`, phần forecast và các biểu đồ/page phụ thuộc trước khi xác nhận bàn giao.
-
-## Tiêu chí hoàn thành
-
-- RFM ổn định khi chạy với dữ liệu mới và segment có mô tả nghiệp vụ.
-- Forecast có time-based validation, metric và biểu đồ dễ đối chiếu.
-- Có danh sách insight/kết luận đủ để sử dụng trong dashboard và phần trình bày đồ án.
+- [ ] Chọn mục tiêu dự báo: doanh thu tổng, doanh thu theo quốc gia/khu vực, hoặc nhu cầu từng thị trường. Dùng `Sales` làm giá trị doanh thu và `Quantity` làm đại diện nhu cầu; tổng hợp theo tháng và theo thị trường từ dữ liệu trong `data/processed/`.
+- [ ] Dùng `monthly_sales.csv` cho dự báo doanh thu tổng; dùng `cleaned_data.csv` để tổng hợp theo Country/Region. Nếu phân tích theo châu lục, bổ sung mapping Country → Continent có nguồn và quy tắc rõ ràng.
+- [ ] Chia dữ liệu theo thời gian: train trên giai đoạn 2012–2018, test trên 2021–2024. Không dùng các tháng 2019–2020 đang được điền 0 như doanh thu thực để train hoặc đánh giá. (Lưu ý: Cập nhật khi được cào thêm dữ liệu trong các năm bị trống)
+- [ ] Đánh giá dự báo trên 2021–2024 bằng MAE và RMSE; tạo biểu đồ đối chiếu doanh thu thực tế với dự báo trong giai đoạn test.
+- [ ] Sau khi chọn mô hình và cấu hình, huấn luyện lại trên toàn bộ dữ liệu thực có sẵn (2012–2018 và 2021–2024), loại trừ các tháng 2019–2020 được điền 0; dự báo doanh thu/nhu cầu cho 2025–2050 và nêu rõ giả định/giới hạn của dự báo dài hạn. (Lưu ý: Cập nhật khi được cào thêm dữ liệu trong các năm bị trống)
+- [ ] Bàn giao cho Dashboard các biểu đồ: thực tế so với dự báo 2021–2024; dự báo 2025–2050; và biểu đồ theo quốc gia/khu vực/châu lục nếu mục tiêu thị trường được chọn.

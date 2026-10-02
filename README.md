@@ -23,7 +23,7 @@
 | --- | --- | --- | --- |
 | Phạm Đức Khoa | 24149170 | [dashboard](docs/members/dashboard.md) | Dashboard Hub-and-Spoke, liên kết các phần |
 | Phạm Quốc Duy | 24133008 | [insight_forecast](docs/members/insight_forecast.md) | RFM, insight, dự báo |
-| Nguyễn Văn Xuân An | 24133002 | [data](docs/members/data.md) | Data pipeline, EDA |
+| Nguyễn Văn Xuân An | 24133002 | [eda](docs/members/eda.md) | Data pipeline, EDA |
 
 
 ## Cấu trúc dự án
@@ -50,7 +50,7 @@ rfm-visual-data-interaction/
 ├── assets/
 │   └── style.css            # Toàn bộ màu sắc/font/kích thước sửa ở 1 nơi
 ├── docs/
-│   └── members/             # dashboard.md (Khoa), data.md (An), insight_forecast.md (Duy)
+│   └── members/             # dashboard.md (Khoa), eda.md (An), insight_forecast.md (Duy)
 ├── requirements.txt
 └── README.md
 ```
