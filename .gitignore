@@ -26,7 +26,7 @@ env/
 Thumbs.db
 tempCodeRunnerFile.py
 
-data/raw/SOURCES.md
+
 
 # không ignore .gitkeep giữ khung thư mục
 !**/.gitkeep
@@ -34,8 +34,4 @@ data/raw/SOURCES.md
 # không theo dõi thư mục specs
 specs/*
 
-# Dataset trao đổi qua Drive; không thêm file dữ liệu vào origin
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
+
