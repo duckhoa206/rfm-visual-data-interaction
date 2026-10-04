@@ -86,8 +86,9 @@ py -3.12 -m venv .venv
 .venv\Scripts\activate.bat
 python -m pip install -r requirements.txt
 ```
-Lấy dữ liệu từ link Drive (mục “Quy tắc dữ liệu”), giải nén đúng cấu trúc `data/`,
-làm sạch toàn bộ (UNION + JOIN) và chạy dashboard Hub-and-Spoke:
+Dữ liệu đầu vào và các bảng đã xử lý được lưu riêng trong `data/` và quản lý cùng
+mã nguồn trên GitHub. Chạy pipeline để tái tạo dữ liệu processed, sau đó chạy
+dashboard Hub-and-Spoke:
 
 ```cmd
 python scripts\clean_data.py
@@ -98,7 +99,7 @@ Mở địa chỉ Local URL mà Dash hiển thị, thường là `http://127.0.0
 
 ## Sử dụng dữ liệu
 
-1. Đặt file CSV nguồn vào thư mục `data/raw/` (và ghi nguồn/license/giới hạn vào `docs/data_sources.md`).
+1. Đặt file dữ liệu nguồn vào `data/raw/` (và ghi nguồn/license/giới hạn vào `docs/data_sources.md`).
 2. Chạy pipeline làm sạch + JOIN toàn bộ bảng, ví dụ:
 
 ```cmd
@@ -133,16 +134,17 @@ Tất cả trang dùng chung bộ lọc khu vực, quốc gia, thời gian, phâ
 
 ## Quy tắc dữ liệu (bắt buộc)
 
-- **Không commit/push bất kỳ file dữ liệu nào lên origin** (`data/` đã bị ignore toàn bộ).
-- Dữ liệu `data/raw/` và `data/processed/` được các thành viên trao đổi với nhau
-  **qua link Google Drive** (link Drive sẽ cập nhật tại đây):
-  - 👉 Drive data: _(TODO: dán link Drive dùng chung tại đây)_
-- Thành viên mới: tải data từ Drive về đúng cấu trúc `data/raw/`, `data/processed/`,
-  sau đó chạy `python scripts\clean_data.py` để tái tạo và kiểm tra pipeline.
+- Dữ liệu được tách trong `data/raw/` (nguồn) và `data/processed/` (đầu ra pipeline),
+  có thể thêm và chia sẻ trực tiếp cùng repository trên GitHub; không cần Google Drive.
+- Khi thêm dữ liệu, kiểm tra quyền/license và ghi nguồn, giới hạn sử dụng tại
+  `docs/data_sources.md`. Mỗi file GitHub thông thường phải nhỏ hơn 100 MB.
+- Thành viên mới clone repository là có dữ liệu; chạy
+  `python scripts\clean_data.py` để tái tạo và kiểm tra các bảng processed.
 
 ## Quy ước làm việc nhóm
 
-- Không commit thư mục `.venv/`, cache Python hoặc file dữ liệu nhạy cảm/lớn.
+- Không commit thư mục `.venv/`, cache Python hoặc dữ liệu nhạy cảm; dùng Git LFS
+  hoặc kho lưu trữ phù hợp nếu một file vượt giới hạn GitHub.
 - Không tính lại RFM trong `src/dash_app/pages/`; dùng `RFM` từ `src/dash_app/shared_data.py` (tính 1 lần bằng `src/shared/rfm_utils.py`) và hàm dựng hình trong `src/dash_app/components/charts.py`.
 - Mỗi thay đổi chức năng nên được thực hiện có commit riêng, có mô tả rõ ràng.
 - Cập nhật tài liệu nhiệm vụ tương ứng trong `docs/members/` khi mở rộng dashboard.

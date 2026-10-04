@@ -1,6 +1,9 @@
 # Nguồn dữ liệu
 
-Nguồn đầu vào được lưu trong `data/raw/` và chia sẻ qua Google Drive; không commit/push các file dữ liệu. Mọi bảng processed được tái tạo bằng `python scripts/clean_data.py`.
+Nguồn đầu vào được lưu riêng trong `data/raw/`; các bảng đầu ra được lưu trong
+`data/processed/`. Cả hai thư mục được quản lý cùng repository để thành viên có thể
+lấy dữ liệu trực tiếp từ GitHub, không cần Google Drive. Mọi bảng processed có thể
+được tái tạo bằng `python scripts/clean_data.py`.
 
 ## Fact bán hàng
 

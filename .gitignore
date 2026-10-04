@@ -26,12 +26,8 @@ env/
 Thumbs.db
 tempCodeRunnerFile.py
 
-
-
 # không ignore .gitkeep giữ khung thư mục
 !**/.gitkeep
 
 # không theo dõi thư mục specs
 specs/*
-
-
