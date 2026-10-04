@@ -43,7 +43,8 @@ def _update(store, chart):
     orders_f, _ = data_service.apply_filters(
         ORDERS, RFM, regions=store.get("regions"), countries=store.get("countries"),
         start_date=store.get("start"), end_date=store.get("end"),
-        segments=store.get("segments"))
+        segments=store.get("segments"),
+        data_sources=store.get("data_sources"))
     if orders_f.empty:
         return blank_figure(), "Không có dữ liệu khớp với bộ lọc.", True
     return build_geo_figure(chart or "choropleth", orders_f), "", False

@@ -3,10 +3,10 @@
 Fact chính (dashboard đọc duy nhất file này):
   data/raw/global_superstore_orders.csv (2012-2015, 165 quốc gia)
   + data/raw/superstore_2015_2018.csv (2015-2018, Mỹ — lấp 2016-2018)
+  + data/raw/global_electronics_retail_2019_2020.csv (Kaggle, demo/unverified)
   + data/raw/superstore_2021_2024.csv (2021-2024, Mỹ/Canada — gần 2026 nhất)
-  UNION → data/processed/cleaned_data.csv (schema 10 cột, tương thích cũ)
-  Khoảng trống còn lại 2019-2020: không có nguồn tương thích tải trực tiếp
-  (Kaggle cần auth, Scribd là PDF, file 100k-features thiếu Category/Region).
+  UNION → data/processed/cleaned_data.csv (10 cột nghiệp vụ + Data Source).
+  Cột Data Source cho phép truy vết/tách cohort; nguồn Kaggle được cảnh báo trên dashboard.
 
 Bảng phụ (làm sạch + join minh hoạ, không phá pipeline cũ):
   people_cleaned.csv, walmart_*_cleaned.csv, walmart_weekly_enriched.csv
@@ -47,20 +47,30 @@ CLEAN_DATA_PATH = PROCESSED_DIR / "cleaned_data.csv"
 def run_pipeline() -> dict:
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 1. Fact đơn hàng: UNION nguồn gốc (2012-2015) + lấp 2015-2018 + nguồn mới (2021-2024).
+    # 1. Fact đơn hàng: UNION bốn nguồn có nhãn provenance.
     orders_global = clean_orders(
         RAW_DIR / "global_superstore_orders.csv",
         PROCESSED_DIR / "_tmp_global.csv",
+        source_name="Global Superstore (2012-2015)",
     )
     orders_mid = clean_orders(
         RAW_DIR / "superstore_2015_2018.csv",
         PROCESSED_DIR / "_tmp_mid.csv",
+        source_name="Superstore (2015-2018)",
+    )
+    orders_demo = clean_orders(
+        RAW_DIR / "global_electronics_retail_2019_2020.csv",
+        PROCESSED_DIR / "_tmp_demo.csv",
+        source_name="Kaggle Global Electronics Retail (demo, unverified)",
     )
     orders_recent = clean_orders(
         RAW_DIR / "superstore_2021_2024.csv",
         PROCESSED_DIR / "_tmp_recent.csv",
+        source_name="Superstore (2021-2024)",
     )
-    orders_union = build_orders_union([orders_global, orders_mid, orders_recent])
+    orders_union = build_orders_union(
+        [orders_global, orders_mid, orders_demo, orders_recent]
+    )
     orders_union.to_csv(CLEAN_DATA_PATH, index=False)
 
     # 2. People (JOIN key Region).
@@ -91,7 +101,7 @@ def run_pipeline() -> dict:
     monthly = build_monthly_sales(orders_union)
     monthly.to_csv(PROCESSED_DIR / "monthly_sales.csv", index=False)
 
-    for tmp in ["_tmp_global.csv", "_tmp_mid.csv", "_tmp_recent.csv"]:
+    for tmp in ["_tmp_global.csv", "_tmp_mid.csv", "_tmp_demo.csv", "_tmp_recent.csv"]:
         tmp_path = PROCESSED_DIR / tmp
         if tmp_path.exists():
             tmp_path.unlink()

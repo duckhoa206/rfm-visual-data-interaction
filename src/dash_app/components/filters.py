@@ -14,6 +14,7 @@ def _initial_store(options: dict) -> dict:
         "start": pd.Timestamp(options["date_min"]).date().isoformat(),
         "end": pd.Timestamp(options["date_max"]).date().isoformat(),
         "segments": options["segments"],
+        "data_sources": options["data_sources"],
     }
 
 
@@ -79,6 +80,19 @@ def layout(options: dict) -> html.Div:
                         ],
                         md=3,
                     ),
+                    dbc.Col(
+                        [
+                            html.Label("Nguồn dữ liệu", className="filter-label"),
+                            dcc.Dropdown(
+                                id="data-source-dd",
+                                options=options["data_sources"],
+                                value=options["data_sources"],
+                                multi=True,
+                                placeholder="Chọn nguồn...",
+                            ),
+                        ],
+                        md=3,
+                    ),
                 ],
                 class_name="g-2",
             ),
@@ -103,14 +117,17 @@ def register_callbacks(app, orders: pd.DataFrame, rfm: pd.DataFrame) -> None:
         Output("country-dd", "options"),
         Output("country-dd", "value"),
         Input("region-dd", "value"),
+        Input("data-source-dd", "value"),
         prevent_initial_call=True,
     )
-    def _drill_down_countries(regions):
+    def _drill_down_countries(regions, data_sources):
         # Đổi Region thì reset Country về all (spec FR-03): tránh kẹt subset cũ
         # khiến chọn lại Region mà dataset không khôi phục (bug review Phase 4).
         if not regions:
             return [], []
-        countries = data_service.get_countries_for_regions(orders, regions)
+        countries = data_service.get_countries_for_regions(
+            orders, regions, data_sources=data_sources
+        )
         return countries, countries
 
     @app.callback(
@@ -120,14 +137,16 @@ def register_callbacks(app, orders: pd.DataFrame, rfm: pd.DataFrame) -> None:
         Input("date-range", "start_date"),
         Input("date-range", "end_date"),
         Input("segment-dd", "value"),
+        Input("data-source-dd", "value"),
     )
-    def _save_store(regions, countries, start, end, segments):
+    def _save_store(regions, countries, start, end, segments, data_sources):
         return {
             "regions": regions,
             "countries": countries,
             "start": start,
             "end": end,
             "segments": segments,
+            "data_sources": data_sources,
         }
 
     @app.callback(
@@ -146,5 +165,6 @@ def register_callbacks(app, orders: pd.DataFrame, rfm: pd.DataFrame) -> None:
             start_date=store.get("start"),
             end_date=store.get("end"),
             segments=store.get("segments"),
+            data_sources=store.get("data_sources"),
         )
         return f"{len(orders_f):,}", f"{rfm_f['Customer ID'].nunique():,}"

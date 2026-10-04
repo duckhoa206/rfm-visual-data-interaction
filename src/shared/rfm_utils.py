@@ -12,7 +12,8 @@ import pandas as pd
 
 def compute_rfm(orders_df: pd.DataFrame, snapshot_date: pd.Timestamp | None = None) -> pd.DataFrame:
     """
-    Tính Recency, Frequency, Monetary theo từng Customer ID từ bảng đơn hàng.
+    Tính Recency, Frequency, Monetary theo Customer ID, hoặc theo cặp
+    Customer ID × Data Source khi bảng có provenance.
 
     orders_df cần có các cột: 'Customer ID', 'Order Date', 'Order ID', 'Sales'
     snapshot_date: ngày mốc để tính Recency, mặc định = ngày đơn hàng gần nhất + 1 ngày
@@ -23,17 +24,26 @@ def compute_rfm(orders_df: pd.DataFrame, snapshot_date: pd.Timestamp | None = No
     if snapshot_date is None:
         snapshot_date = df["Order Date"].max() + pd.Timedelta(days=1)
 
-    rfm = df.groupby("Customer ID").agg(
+    group_columns = ["Customer ID"]
+    if "Data Source" in df.columns:
+        group_columns.append("Data Source")
+
+    rfm = df.groupby(group_columns).agg(
         Recency=("Order Date", lambda x: (snapshot_date - x.max()).days),
         Frequency=("Order ID", "nunique"),
         Monetary=("Sales", "sum"),
     ).reset_index()
 
-    # gắn thêm thông tin quốc gia/khu vực phổ biến nhất của khách (để lọc theo geo ở tab khác)
-    top_country = df.groupby("Customer ID")["Country"].agg(lambda x: x.mode().iloc[0])
-    top_region = df.groupby("Customer ID")["Region"].agg(lambda x: x.mode().iloc[0])
-    rfm["Country"] = rfm["Customer ID"].map(top_country)
-    rfm["Region"] = rfm["Customer ID"].map(top_region)
+    # Gắn vị trí phổ biến nhất trong đúng customer/source cohort.
+    locations = (
+        df.groupby(group_columns)
+        .agg(
+            Country=("Country", lambda values: values.mode().iloc[0]),
+            Region=("Region", lambda values: values.mode().iloc[0]),
+        )
+        .reset_index()
+    )
+    rfm = rfm.merge(locations, on=group_columns, how="left")
 
     rfm["Monetary"] = rfm["Monetary"].round(2)
     return rfm

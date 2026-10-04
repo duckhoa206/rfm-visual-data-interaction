@@ -14,7 +14,10 @@ from sklearn.linear_model import LinearRegression
 
 from src.shared.theme import apply_chart_theme
 
-RFM_COLUMNS = ["Customer ID", "Country", "Recency", "Frequency", "Monetary", "RFM_Score", "Segment"]
+RFM_COLUMNS = [
+    "Customer ID", "Data Source", "Country", "Recency", "Frequency",
+    "Monetary", "RFM_Score", "Segment",
+]
 
 
 def kpi_card(title: str, value_id: str) -> dbc.Card:
@@ -40,9 +43,13 @@ def build_bar_category(orders_filtered: pd.DataFrame) -> go.Figure:
 def build_line_monthly(orders_filtered: pd.DataFrame) -> go.Figure:
     monthly = (
         orders_filtered.set_index("Order Date")
-        .resample("MS")["Sales"].sum().reset_index()
+        .resample("MS")
+        .agg(Sales=("Sales", "sum"), Rows=("Sales", "size"))
+        .reset_index()
     )
+    monthly.loc[monthly["Rows"] == 0, "Sales"] = np.nan
     fig = px.line(monthly, x="Order Date", y="Sales", markers=True)
+    fig.update_traces(connectgaps=False)
     fig.update_traces(line=dict(width=3))
     return apply_chart_theme(fig)
 
@@ -82,16 +89,24 @@ def build_forecast_figure(orders_filtered: pd.DataFrame) -> tuple:
     """Trả về (figure, caption). Cần >= 3 tháng dữ liệu."""
     monthly = (
         orders_filtered.set_index("Order Date")
-        .resample("MS")["Sales"].sum().reset_index()
+        .resample("MS")
+        .agg(Sales=("Sales", "sum"), Rows=("Sales", "size"))
+        .reset_index()
     )
+    monthly = monthly[monthly["Rows"] > 0].reset_index(drop=True)
     if len(monthly) < 3:
         return None, None
-    monthly["t"] = np.arange(len(monthly))
+    first_month = monthly["Order Date"].iloc[0]
+    monthly["t"] = (
+        (monthly["Order Date"].dt.year - first_month.year) * 12
+        + monthly["Order Date"].dt.month
+        - first_month.month
+    )
     model = LinearRegression().fit(monthly[["t"]], monthly["Sales"])
-    future_t = np.arange(len(monthly), len(monthly) + 3)
+    future_t = np.arange(monthly["t"].max() + 1, monthly["t"].max() + 4)
     future_dates = pd.date_range(
         monthly["Order Date"].max() + pd.DateOffset(months=1), periods=3, freq="MS")
-    future_sales = model.predict(future_t.reshape(-1, 1))
+    future_sales = model.predict(pd.DataFrame({"t": future_t}))
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=monthly["Order Date"], y=monthly["Sales"],
@@ -102,6 +117,7 @@ def build_forecast_figure(orders_filtered: pd.DataFrame) -> tuple:
     apply_chart_theme(fig)
     caption = (
         f"Xu hướng trung bình: {model.coef_[0]:+,.0f} đồng/tháng "
-        f"(hồi quy tuyến tính trên {len(monthly)} tháng, dự báo 3 tháng tiếp theo)."
+        f"(hồi quy tuyến tính trên {len(monthly)} tháng có giao dịch; "
+        "tháng trống được bỏ qua, dự báo 3 tháng tiếp theo)."
     )
     return fig, caption

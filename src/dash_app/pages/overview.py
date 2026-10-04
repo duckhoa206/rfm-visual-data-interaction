@@ -59,7 +59,8 @@ def _update_kpis(store):
     orders_f, rfm_f = data_service.apply_filters(
         ORDERS, RFM, regions=store.get("regions"), countries=store.get("countries"),
         start_date=store.get("start"), end_date=store.get("end"),
-        segments=store.get("segments"))
+        segments=store.get("segments"),
+        data_sources=store.get("data_sources"))
     return (
         f"${orders_f['Sales'].sum():,.0f}",
         f"${orders_f['Profit'].sum():,.0f}",
@@ -81,7 +82,8 @@ def _update_overview(store):
     orders_f, _ = data_service.apply_filters(
         ORDERS, RFM, regions=store.get("regions"), countries=store.get("countries"),
         start_date=store.get("start"), end_date=store.get("end"),
-        segments=store.get("segments"))
+        segments=store.get("segments"),
+        data_sources=store.get("data_sources"))
     if orders_f.empty:
         return blank_figure(), blank_figure(), "Không có dữ liệu khớp với bộ lọc.", True
     return build_bar_category(orders_f), build_line_monthly(orders_f), "", False
@@ -94,5 +96,6 @@ def _update_table(store):
     _, rfm_f = data_service.apply_filters(
         ORDERS, RFM, regions=store.get("regions"), countries=store.get("countries"),
         start_date=store.get("start"), end_date=store.get("end"),
-        segments=store.get("segments"))
+        segments=store.get("segments"),
+        data_sources=store.get("data_sources"))
     return rfm_f[RFM_COLUMNS].to_dict("records")

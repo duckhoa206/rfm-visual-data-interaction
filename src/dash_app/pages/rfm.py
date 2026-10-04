@@ -43,7 +43,8 @@ def _update(store, chart):
     _, rfm_f = data_service.apply_filters(
         ORDERS, RFM, regions=store.get("regions"), countries=store.get("countries"),
         start_date=store.get("start"), end_date=store.get("end"),
-        segments=store.get("segments"))
+        segments=store.get("segments"),
+        data_sources=store.get("data_sources"))
     if rfm_f.empty:
         return blank_figure(), "Không có khách hàng nào khớp với bộ lọc.", True
     return build_rfm_figure(chart or "pie", rfm_f), "", False

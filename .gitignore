@@ -33,3 +33,9 @@ data/raw/SOURCES.md
 
 # không theo dõi thư mục specs
 specs/*
+
+# Dataset trao đổi qua Drive; không thêm file dữ liệu vào origin
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep

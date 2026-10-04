@@ -11,6 +11,7 @@ REQUIRED_COLUMNS = [
     "Order ID", "Order Date", "Customer ID", "Country", "Region",
     "Category", "Sub-Category", "Sales", "Quantity", "Profit",
 ]
+DATA_SOURCE_COLUMN = "Data Source"
 
 # Các tên cột thường gặp trong CSV thật. Có thể bổ sung khi nhóm nhận dataset.
 COLUMN_ALIASES = {
@@ -42,8 +43,12 @@ COLUMN_ALIASES = {
 }
 
 
-def clean_orders(raw_path: Path, clean_path: Path) -> pd.DataFrame:
-    """Đọc CSV raw, chuẩn hoá schema và ghi một CSV sạch cho dashboard."""
+def clean_orders(
+    raw_path: Path,
+    clean_path: Path,
+    source_name: str = "Unspecified",
+) -> pd.DataFrame:
+    """Chuẩn hoá CSV raw và gắn nhãn nguồn trước khi ghi bảng sạch."""
     df = pd.read_csv(raw_path)
     df.columns = [str(column).strip() for column in df.columns]
 
@@ -64,6 +69,7 @@ def clean_orders(raw_path: Path, clean_path: Path) -> pd.DataFrame:
         )
 
     df = df[REQUIRED_COLUMNS].copy()
+    df[DATA_SOURCE_COLUMN] = source_name
     df["Order Date"] = pd.to_datetime(df["Order Date"], errors="coerce")
 
     for column in ["Sales", "Quantity", "Profit"]:
@@ -218,12 +224,19 @@ def clean_bigmart(raw_path: Path, clean_path: Path) -> pd.DataFrame:
 
 
 def build_orders_union(dfs: list) -> pd.DataFrame:
-    """UNION các bảng đơn hàng đã chuẩn hoá 10 cột (Global 2012-2015 +
-    Superstore 2021-2024). Order ID hai nguồn không trùng (CA-/US-...)."""
-    union_df = pd.concat(dfs, ignore_index=True)
+    """UNION các bảng đơn hàng, giữ nhãn provenance ngoài schema nghiệp vụ."""
+    tagged_dfs = []
+    for frame in dfs:
+        tagged = frame.copy()
+        if DATA_SOURCE_COLUMN not in tagged.columns:
+            tagged[DATA_SOURCE_COLUMN] = "Unspecified"
+        tagged[DATA_SOURCE_COLUMN] = tagged[DATA_SOURCE_COLUMN].fillna("Unspecified")
+        tagged_dfs.append(tagged[REQUIRED_COLUMNS + [DATA_SOURCE_COLUMN]])
+
+    union_df = pd.concat(tagged_dfs, ignore_index=True)
     union_df["Order Date"] = pd.to_datetime(union_df["Order Date"], errors="coerce")
     union_df = union_df.dropna(subset=REQUIRED_COLUMNS).drop_duplicates(
-        subset=["Order ID", "Customer ID", "Order Date", "Sales", "Quantity"])
+        subset=REQUIRED_COLUMNS)
     return union_df.sort_values("Order Date").reset_index(drop=True)
 
 
@@ -259,14 +272,17 @@ def build_rfm_export(orders: pd.DataFrame, people: pd.DataFrame) -> pd.DataFrame
 
 
 def build_monthly_sales(orders: pd.DataFrame) -> pd.DataFrame:
-    """Chuỗi doanh thu/lợi nhuận/đơn/khách theo tháng cho forecast
-    (train/test split theo thời gian)."""
+    """Tổng hợp theo tháng và nguồn, không tạo tháng rỗng như doanh thu 0."""
     df = orders.copy()
     df["Order Date"] = pd.to_datetime(df["Order Date"])
-    monthly = df.set_index("Order Date").resample("MS").agg(
+    df["Month"] = df["Order Date"].dt.to_period("M").dt.to_timestamp()
+    group_columns = ["Month"]
+    if DATA_SOURCE_COLUMN in df.columns:
+        group_columns.insert(0, DATA_SOURCE_COLUMN)
+    monthly = df.groupby(group_columns, as_index=False, dropna=False).agg(
         Sales=("Sales", "sum"),
         Profit=("Profit", "sum"),
         Orders=("Order ID", "nunique"),
         Customers=("Customer ID", "nunique"),
-    ).reset_index().rename(columns={"Order Date": "Month"})
-    return monthly
+    )
+    return monthly.sort_values(group_columns).reset_index(drop=True)

@@ -31,6 +31,22 @@ app.layout = dbc.Container(
     [
         dcc.Location(id="url"),
         dcc.Store(id="sidebar-store", data=False),
+        dbc.Alert(
+            [
+                "Lưu ý: dữ liệu 2019–2020 được bổ sung từ bộ Kaggle Global Electronics Retail; "
+                "provenance giao dịch chưa được xác minh. Hãy dùng bộ lọc Nguồn dữ liệu "
+                "để tách khỏi các nguồn còn lại. ",
+                html.A(
+                    "Xem trang nguồn",
+                    href="https://www.kaggle.com/datasets/faheem113141/global-electronics-retail",
+                    target="_blank",
+                    rel="noopener noreferrer",
+                    className="alert-link",
+                ),
+            ],
+            color="warning",
+            class_name="mb-2",
+        ),
         dbc.Row(
             [
                 dbc.Col(header.layout(), md=6),

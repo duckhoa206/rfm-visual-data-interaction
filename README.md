@@ -31,9 +31,9 @@
 ```text
 rfm-visual-data-interaction/
 ├── data/
-│   ├── raw/                 # Dữ liệu đầu vào (xem data/raw/SOURCES.md)
+│   ├── raw/                 # Dữ liệu đầu vào (xem docs/data_sources.md)
 │   └── processed/
-│       ├── cleaned_data.csv # Fact duy nhất dashboard đọc (UNION 2012–2024)
+│       ├── cleaned_data.csv # Fact dashboard đọc (UNION 4 nguồn, có nhãn Data Source)
 │       ├── orders_enriched.csv, walmart_weekly_enriched.csv,
 │       ├── bigmart_cleaned.csv, people_cleaned.csv,  # Bảng JOIN minh hoạ
 │       └── rfm_customers.csv, monthly_sales.csv      # Bảng giao Insight & Forecast
@@ -50,6 +50,7 @@ rfm-visual-data-interaction/
 ├── assets/
 │   └── style.css            # Toàn bộ màu sắc/font/kích thước sửa ở 1 nơi
 ├── docs/
+│   ├── data_sources.md      # Nguồn dữ liệu, license và giới hạn
 │   └── members/             # dashboard.md (Khoa), eda.md (An), insight_forecast.md (Duy)
 ├── requirements.txt
 └── README.md
@@ -63,14 +64,15 @@ data/raw/*.csv → scripts/clean_data.py → data/processed/*.csv → Dash dashb
 
 - Fact chính: `global_superstore_orders.csv` (2012–2015) UNION
   `superstore_2015_2018.csv` (2015–2018, lấp 2016-2018) UNION
+  `global_electronics_retail_2019_2020.csv` (Kaggle, demo/provenance chưa xác minh) UNION
   `superstore_2021_2024.csv` (2021–2024, gần 2026 nhất) → `cleaned_data.csv`
-  (71.391 dòng, schema 10 cột, 2012-01-01 → 2024-12-30, chỉ còn trống 2019–2020).
+  (10 cột nghiệp vụ + `Data Source`; nguồn demo 2019–2020 phải được tách/ghi rõ khi diễn giải).
 - JOIN minh hoạ: đơn hàng LEFT JOIN People theo Region (`orders_enriched.csv`);
   Walmart train LEFT JOIN features theo (Store, Date) + LEFT JOIN stores
   (`walmart_weekly_enriched.csv`); BigMart làm sạch đơn bảng (`bigmart_cleaned.csv`).
-- Chi tiết nguồn, EDA và tỷ lệ khớp JOIN xem `data/raw/SOURCES.md`.
+- Chi tiết nguồn/license/giới hạn xem `docs/data_sources.md`; EDA và tỷ lệ khớp JOIN xem `docs/members/eda.md`.
 
-Dashboard chỉ đọc `data/processed/cleaned_data.csv` (qua `src/dash_app/shared_data.py`), không đọc trực tiếp `data/raw/`. Khi thay dữ liệu thật và schema vẫn đúng hợp đồng dữ liệu, chỉ cần chạy lại pipeline. Nếu schema khác dữ liệu mẫu, cần cập nhật pipeline/các phần liên quan trước khi làm mới dashboard.
+Dashboard chỉ đọc `data/processed/cleaned_data.csv` (qua `src/dash_app/shared_data.py`), không đọc trực tiếp `data/raw/`. Fact giữ 10 cột nghiệp vụ và thêm `Data Source` để truy dấu nguồn; dashboard có bộ lọc nguồn và cảnh báo riêng cho nguồn Kaggle demo. Không coi dữ liệu Kaggle là số liệu giao dịch đã kiểm chứng.
 
 `data/processed/` là thư mục output trung gian và là nguồn dữ liệu duy nhất được bàn giao cho Dashboard, RFM và Forecast. Không sửa trực tiếp `cleaned_data.csv`; mọi thay đổi phải bắt đầu từ file trong `data/raw/` và được tạo lại bằng pipeline.
 
@@ -96,7 +98,7 @@ Mở địa chỉ Local URL mà Dash hiển thị, thường là `http://127.0.0
 
 ## Sử dụng dữ liệu
 
-1. Đặt file CSV nguồn vào thư mục `data/raw/` (và ghi nguồn vào `data/raw/SOURCES.md`).
+1. Đặt file CSV nguồn vào thư mục `data/raw/` (và ghi nguồn/license/giới hạn vào `docs/data_sources.md`).
 2. Chạy pipeline làm sạch + JOIN toàn bộ bảng, ví dụ:
 
 ```cmd
@@ -105,7 +107,7 @@ python scripts\clean_data.py
 
 3. Làm mới dashboard. File `data/processed/cleaned_data.csv` sẽ được cập nhật và là nguồn duy nhất dashboard sử dụng (qua `src/dash_app/shared_data.py`).
 
-Dataset nguồn không bắt buộc phải có đúng tên hoặc đúng thứ tự các cột của dữ liệu mẫu. Pipeline cần ánh xạ được các trường tương đương về schema đầu ra: `Order ID`, `Order Date`, `Customer ID`, `Country`, `Region`, `Category`, `Sub-Category`, `Sales`, `Quantity`, `Profit`. Đây là schema mà các hàm làm sạch, RFM, bộ lọc và biểu đồ hiện đang sử dụng sau khi chuẩn hoá. Nếu dataset thật thiếu trường, khác kiểu dữ liệu hoặc thay đổi ý nghĩa, hãy cập nhật `COLUMN_ALIASES`/pipeline và kiểm tra các phần liên quan; không tự tạo giá trị giả để giữ dashboard chạy.
+Dataset nguồn không bắt buộc phải có đúng tên hoặc đúng thứ tự các cột của dữ liệu mẫu. Pipeline ánh xạ schema nghiệp vụ gồm `Order ID`, `Order Date`, `Customer ID`, `Country`, `Region`, `Category`, `Sub-Category`, `Sales`, `Quantity`, `Profit`, đồng thời gắn `Data Source` làm provenance. Nếu dataset thiếu trường hoặc thay đổi ý nghĩa, hãy cập nhật pipeline/các phần liên quan; không tự tạo giá trị để giữ dashboard chạy.
 
 ## Các trang dashboard (Hub-and-Spoke)
 
@@ -119,7 +121,7 @@ nút ☰ thu gọn/mở rộng), nội dung bên phải:
 - **Phân khúc RFM** (`/rfm`): tỷ trọng phân khúc / scatter Frequency–Monetary / box plot.
 - **Dự báo** (`/forecast`): doanh thu thực tế + dự báo 3 tháng (hồi quy tuyến tính).
 
-Tất cả trang dùng chung bộ lọc khu vực, quốc gia, thời gian và phân khúc RFM.
+Tất cả trang dùng chung bộ lọc khu vực, quốc gia, thời gian, phân khúc RFM và nguồn dữ liệu.
 
 ## Cách thêm một trang mới
 

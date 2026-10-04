@@ -25,14 +25,14 @@ src/dash_app/components/       header.py, sidebar.py, filters.py, charts.py
 assets/style.css               Style duy nhất của dashboard
 ```
 
-Mỗi trang đăng ký bằng `dash.register_page(__name__, **PAGE_META["<key>"])`. Bộ lọc ở header lưu vào `dcc.Store(id="filter-store")`; mọi trang đọc store này nên chuyển trang không reset. Không đọc trực tiếp file trong `data/raw/` từ bất kỳ trang nào.
+Mỗi trang đăng ký bằng `dash.register_page(__name__, **PAGE_META["<key>"])`. Bộ lọc ở header lưu vào `dcc.Store(id="filter-store")`; mọi trang đọc store này nên chuyển trang không reset. Bộ lọc gồm khu vực, quốc gia, thời gian, segment và `Data Source`; nguồn Kaggle 2019–2020 có cảnh báo provenance demo/unverified. Không đọc trực tiếp file trong `data/raw/` từ bất kỳ trang nào.
 
 ## Input và output
 
 ### Input
 
-- Fact duy nhất `data/processed/cleaned_data.csv` (UNION 2012–2024, schema 10 cột) qua `shared_data.py`; RFM tính 1 lần bằng `src/shared/rfm_utils.py`.
-- `data_service.apply_filters()`: dữ liệu sau filter khu vực, quốc gia, thời gian và segment.
+- Fact duy nhất `data/processed/cleaned_data.csv` (UNION 2012–2024, 10 cột nghiệp vụ + provenance) qua `shared_data.py`; RFM tính 1 lần theo Customer ID × nguồn bằng `src/shared/rfm_utils.py`.
+- `data_service.apply_filters()`: dữ liệu sau filter khu vực, quốc gia, thời gian, segment và nguồn.
 
 ### Output hiện có (10 visual)
 
