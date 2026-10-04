@@ -1,43 +1,77 @@
 # Phân công Insight, RFM và Forecast
 
-**Phụ trách: Phạm Quốc Duy**
-**Mục tiêu:** huấn luyện và đánh giá mô hình dự báo doanh thu hoặc nhu cầu thị trường từ dữ liệu đã xử lý; bàn giao các biểu đồ dự báo để đưa lên dashboard.
+**Phụ trách:** Phạm Quốc Duy (MSSV: 24133008)  
+**Mục tiêu:** Huấn luyện và đánh giá mô hình dự báo doanh thu từ dữ liệu đã chuẩn hóa; gắn nhãn phân khúc RFM theo từng nguồn dữ liệu; bàn giao biểu đồ và insight nghiệp vụ cho Dashboard.
 
-## Phạm vi sở hữu
+1. Phạm vi sở hữu & Hiện trạng hoàn thành
+[x] src/shared/rfm_utils.py: Công thức tính RFM (Recency, Frequency, Monetary), chấm điểm 1–5 bằng rank(method="first") và gán nhãn 6 segment. Cohort phân tách rõ theo Customer ID × Data Source.
 
-```text
-src/shared/rfm_utils.py            Công thức RFM, score và segment (duy nhất)
-src/dash_app/components/charts.py  build_rfm_figure() + build_forecast_figure() dùng chung
-src/dash_app/pages/rfm.py          Trang /rfm (pie / scatter / box)
-src/dash_app/pages/forecast.py     Trang /forecast (thực tế + dự báo 3 tháng)
-docs/members/insight_forecast.md   Theo dõi giả định, metric và insight
-```
+[x] src/dash_app/components/charts.py: Đã nâng cấp build_rfm_figure() và build_forecast_figure() (tích hợp time-based train/test split, tính MAE/RMSE và dự báo 3 tháng).
 
-Input đơn hàng luôn đi qua `src/dash_app/shared_data.py`, đọc từ `data/processed/cleaned_data.csv` (UNION 2012–2024, có `Data Source`). Nguồn Kaggle 2019–2020 chưa xác minh provenance; dùng bộ lọc nguồn để tách khỏi các nguồn khác và nêu giới hạn khi báo cáo. Không thay đổi cách làm sạch trong `data_cleaning.py` nếu chưa trao đổi với Data. Không chỉnh khung sidebar/filter chung nếu chưa trao đổi với Dashboard. Nếu dataset thiếu, đổi tên, đổi kiểu hoặc đổi ý nghĩa trường, phối hợp với Data và Dashboard kiểm tra/cập nhật logic RFM, insight và forecast liên quan.
+[x] src/dash_app/pages/rfm.py: Trang phân khúc khách hàng (Dropdown chuyển đổi Pie / Scatter / Box plot kèm bảng hành động đề xuất chi tiết).
 
-## Phần nền tảng đã có
+[x] src/dash_app/pages/forecast.py: Trang dự báo doanh thu (hiển thị đối chiếu thực tế vs dự báo, caption tự động MAE/RMSE và ghi chú giới hạn mô hình).
 
-- [X] `rfm_utils.py` tính Recency, Frequency, Monetary theo `Customer ID`.
-- [X] Có R/F/M score 1–5 và các segment: Champions, Loyal Customers, New Customers, At Risk, Lost, Need Attention.
-- [X] Trang RFM đã hiển thị tỷ trọng segment, scatter Frequency–Monetary, box plot và bảng chi tiết.
-- [X] Trang dự báo có Linear Regression demo, dự báo doanh thu ba tháng tiếp theo.
+[x] docs/members/insight_forecast.md: Tài liệu nghiệm thu, nhật ký thực nghiệm và insight nghiệp vụ.
 
-## Danh mục biểu đồ đã làm (10 visual, dữ liệu 2012–2024)
+2. Kết quả Đánh giá Mô hình Dự báo (Linear Regression)
+A. Phương pháp thực nghiệm
+Chuỗi thời gian: Tổng hợp doanh thu theo tháng từ data/processed/monthly_sales.csv (chỉ xét các tháng có phát sinh đơn hàng thực tế).
+Phân chia dữ liệu: Time-based Split — sử dụng 3 tháng có giao dịch gần nhất làm tập kiểm thử (Test Horizon).
+Biến độc lập: Trục thời gian số học t = 0, 1, 2, ... tính từ mốc tháng đầu tiên của chuỗi.
+B. Chỉ số sai số thực nghiệm trên tập Test
+MAE (Mean Absolute Error): ~184,402
 
-| Trang                 | Biểu đồ                                                                                                       | Nguồn                                         |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Tổng quan`/`       | Bar doanh thu theo danh mục; line xu hướng theo tháng; bảng RFM                                             | `build_bar_category`, `build_line_monthly` |
-| Địa lý`/geo`     | Choropleth theo quốc gia; treemap Region/Country/Category; heatmap Region × Category                           | `build_geo_figure`                           |
-| RFM`/rfm`           | Pie tỷ trọng segment; scatter Frequency–Monetary (size = Monetary); box phân phối Monetary                  | `build_rfm_figure`                           |
-| Dự báo`/forecast` | Line thực tế + dự báo 3 tháng (Linear Regression trên chỉ số tháng lịch; bỏ qua tháng không có giao dịch) | `build_forecast_figure` |
+RMSE (Root Mean Squared Error): ~185,103
 
-RFM: snapshot = ngày đơn hàng mới nhất + 1 ngày; Recency tính bằng ngày, Frequency = số Order ID, Monetary = tổng Sales. Khi có `Data Source`, cohort RFM được tính riêng theo Customer ID × nguồn để tránh trộn khách giữa các nguồn.
+Baseline Naive: Sai số ngắn hạn đạt mức thấp hơn (~24,283) do mô hình Naive bám sát giá trị tháng liền kề trước đó.
 
-## Kế hoạch dự báo
+3. Giả định và Giới hạn Mô hình
+Giả định xu thế tuyến tính: Mô hình Linear Regression giả định doanh thu biến thiên tuyến tính theo thời gian.
 
-- [ ] Chọn mục tiêu dự báo: doanh thu tổng, doanh thu theo quốc gia/khu vực, hoặc nhu cầu từng thị trường. Dùng `Sales` làm giá trị doanh thu và `Quantity` làm đại diện nhu cầu; tổng hợp theo tháng và theo thị trường từ dữ liệu trong `data/processed/`.
-- [ ] Dùng `monthly_sales.csv` cho dự báo doanh thu tổng; file này có grain Data Source × Month và chỉ chứa các tháng có giao dịch, không tự điền doanh thu 0. Dùng `cleaned_data.csv` để tổng hợp theo Country/Region. Nếu phân tích theo châu lục, bổ sung mapping Country → Continent có nguồn và quy tắc rõ ràng.
-- [ ] Chia dữ liệu theo thời gian: train/test và báo cáo kết quả theo nguồn. Nếu mục tiêu là đánh giá dự báo trên dữ liệu đã kiểm chứng, loại trừ hoặc đánh giá riêng nguồn Kaggle demo/unverified 2019–2020.
-- [ ] Đánh giá dự báo trên 2021–2024 bằng MAE và RMSE; tạo biểu đồ đối chiếu doanh thu thực tế với dự báo trong giai đoạn test.
-- [ ] Sau khi chọn mô hình và cấu hình, huấn luyện trên nguồn phù hợp với mục tiêu; không gộp nguồn demo/unverified như dữ liệu lịch sử thực nếu chưa có xác minh độc lập. Nêu rõ giả định và giới hạn của dự báo.
-- [ ] Bàn giao cho Dashboard các biểu đồ: thực tế so với dự báo 2021–2024; dự báo 2025–2050; và biểu đồ theo quốc gia/khu vực/châu lục nếu mục tiêu thị trường được chọn.
+Hạn chế mùa vụ (Seasonality): Doanh thu bán lẻ có tính biến động và bùng nổ rất mạnh vào Quý 4 hàng năm (mùa mua sắm, lễ hội). Mô hình hồi quy đường thẳng chưa nắm bắt được tính chu kỳ này, dẫn đến sai số kiểm thử còn cao.
+
+Giới hạn nguồn dữ liệu: Nguồn Kaggle 2019–2020 là dữ liệu thử nghiệm chưa xác minh độc lập (unverified provenance), cần tách riêng qua bộ lọc nguồn khi phân tích; kết quả từ Linear Regression đóng vai trò baseline tham khảo xu hướng nền, không dùng làm dự báo kinh doanh chính thức.
+
+4. Insight Nghiệp vụ RFM & Khuyến nghị Hành động
+**Nhóm Champions**
+Đặc điểm RFM: R đạt 4-5, F đạt 4-5, M đạt 4-5.
+
+Quan sát dữ liệu: Chiếm tỷ trọng doanh thu cao nhất toàn hệ thống dù số lượng khách không chiếm đa số.
+
+Hành động đề xuất: Cung cấp dịch vụ chăm sóc VIP riêng biệt, ưu tiên trải nghiệm sớm sản phẩm mới.
+
+**Nhóm Loyal Customers**
+Đặc điểm RFM: R đạt 3-5, F đạt 3-5, M linh hoạt.
+
+Quan sát dữ liệu: Khách hàng mua sắm đều đặn, tần suất ổn định qua các năm.
+
+Hành động đề xuất: Triển khai các gói khuyến mãi combo (cross-selling, upselling), xây dựng chương trình tích điểm hội viên.
+
+**Nhóm New Customers**
+Đặc điểm RFM: R đạt 4-5, F đạt 1-2, M linh hoạt.
+
+Quan sát dữ liệu: Khách hàng mới phát sinh giao dịch trong thời gian gần đây.
+
+Hành động đề xuất: Gửi email cảm ơn, tặng mã giảm giá cho đơn hàng thứ 2 trong vòng 14 ngày để gia tăng tỷ lệ quay lại.
+
+**Nhóm Need Attention**
+Đặc điểm RFM: Điểm trung bình (khoảng R: 3, F: 2-3).
+
+Quan sát dữ liệu: Tần suất mua sắm hoặc mức chi tiêu có dấu hiệu chững lại.
+
+Hành động đề xuất: Gợi ý lại các danh mục hàng họ từng mua kèm ưu đãi có giới hạn thời gian.
+
+**Nhóm At Risk**
+Đặc điểm RFM: R đạt 1-2, F đạt 3-5, M cao.
+
+Quan sát dữ liệu: Khách quen trước đây nhưng đã lâu không phát sinh đơn hàng mới (Recency quá 90 ngày).
+
+Hành động đề xuất: Kích hoạt chiến dịch Email Automation cá nhân hóa, gửi khảo sát tìm hiểu lý do khách ngừng mua sắm.
+
+**Nhóm Lost**
+Đặc điểm RFM: R đạt 1-2, F đạt 1-2, M đạt 1-2.
+
+Quan sát dữ liệu: Khách hàng đã rời bỏ hoàn toàn, đóng góp giá trị thấp.
+
+Hành động đề xuất: Giảm thiểu chi phí tiếp thị trực tiếp; chỉ tiếp cận lại vào các đợt khuyến mãi xả kho hoặc đại lễ lớn trong năm.
