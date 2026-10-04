@@ -11,6 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import html
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 from src.shared.theme import apply_chart_theme
 
@@ -85,39 +86,107 @@ def build_rfm_figure(chart: str, rfm_filtered: pd.DataFrame) -> go.Figure:
     return apply_chart_theme(fig)
 
 
-def build_forecast_figure(orders_filtered: pd.DataFrame) -> tuple:
-    """Trả về (figure, caption). Cần >= 3 tháng dữ liệu."""
+def build_forecast_figure(orders_filtered: pd.DataFrame, test_months: int = 3, forecast_months: int = 3) -> tuple:
+    """
+    Trả về (figure, caption).
+    - Chuỗi thời gian: tháng có giao dịch (bỏ qua tháng trống).
+    - Phân chia Train/Test theo thời gian để đánh giá (MAE, RMSE).
+    - Huấn luyện trên toàn bộ dữ liệu để dự báo tương lai.
+    """
+    if orders_filtered.empty:
+        return None, None
+
+    orders_df = orders_filtered.copy()
+    orders_df["Order Date"] = pd.to_datetime(orders_df["Order Date"])
+
     monthly = (
-        orders_filtered.set_index("Order Date")
+        orders_df.set_index("Order Date")
         .resample("MS")
         .agg(Sales=("Sales", "sum"), Rows=("Sales", "size"))
         .reset_index()
     )
     monthly = monthly[monthly["Rows"] > 0].reset_index(drop=True)
-    if len(monthly) < 3:
-        return None, None
+
+    # Cần tối thiểu dữ liệu train + test
+    if len(monthly) < (test_months + 2):
+        return None, "Không đủ dữ liệu tháng để huấn luyện và kiểm thử mô hình (cần tối thiểu 5 tháng)."
+
+    # Trục thời gian số học t (tính theo khoảng cách tháng so với tháng đầu tiên)
     first_month = monthly["Order Date"].iloc[0]
     monthly["t"] = (
         (monthly["Order Date"].dt.year - first_month.year) * 12
         + monthly["Order Date"].dt.month
         - first_month.month
     )
-    model = LinearRegression().fit(monthly[["t"]], monthly["Sales"])
-    future_t = np.arange(monthly["t"].max() + 1, monthly["t"].max() + 4)
+
+    # 1. Phân chia Train / Test theo thời gian
+    train_df = monthly.iloc[:-test_months].copy()
+    test_df = monthly.iloc[-test_months:].copy()
+
+    # Huấn luyện mô hình đánh giá trên tập Train
+    eval_model = LinearRegression().fit(train_df[["t"]], train_df["Sales"])
+    test_df["pred_sales"] = eval_model.predict(test_df[["t"]])
+
+    # Đánh giá độ chính xác
+    mae = mean_absolute_error(test_df["Sales"], test_df["pred_sales"])
+    rmse = np.sqrt(mean_squared_error(test_df["Sales"], test_df["pred_sales"]))
+
+    # 2. Huấn luyện mô hình trên toàn bộ chuỗi để dự báo tương lai
+    full_model = LinearRegression().fit(monthly[["t"]], monthly["Sales"])
+
+    last_t = monthly["t"].iloc[-1]
+    future_t = np.arange(last_t + 1, last_t + 1 + forecast_months)
     future_dates = pd.date_range(
-        monthly["Order Date"].max() + pd.DateOffset(months=1), periods=3, freq="MS")
-    future_sales = model.predict(pd.DataFrame({"t": future_t}))
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=monthly["Order Date"], y=monthly["Sales"],
-        mode="lines+markers", name="Thực tế"))
-    fig.add_trace(go.Scatter(
-        x=future_dates, y=future_sales,
-        mode="lines+markers", name="Dự báo", line=dict(dash="dash")))
-    apply_chart_theme(fig)
-    caption = (
-        f"Xu hướng trung bình: {model.coef_[0]:+,.0f} đồng/tháng "
-        f"(hồi quy tuyến tính trên {len(monthly)} tháng có giao dịch; "
-        "tháng trống được bỏ qua, dự báo 3 tháng tiếp theo)."
+        monthly["Order Date"].max() + pd.DateOffset(months=1),
+        periods=forecast_months,
+        freq="MS"
     )
+    future_sales = full_model.predict(pd.DataFrame({"t": future_t}))
+
+    # 3. Dựng biểu đồ trực quan
+    fig = go.Figure()
+
+    # Thực tế Train
+    fig.add_trace(go.Scatter(
+        x=train_df["Order Date"], y=train_df["Sales"],
+        mode="lines+markers", name="Thực tế (Huấn luyện)",
+        line=dict(color="#1f77b4", width=2)
+    ))
+
+    # Thực tế Test
+    fig.add_trace(go.Scatter(
+        x=test_df["Order Date"], y=test_df["Sales"],
+        mode="lines+markers", name=f"Thực tế (Kiểm thử {test_months} tháng)",
+        line=dict(color="#2ca02c", width=2)
+    ))
+
+    # Đường đối chiếu dự đoán trên tập Test
+    fig.add_trace(go.Scatter(
+        x=test_df["Order Date"], y=test_df["pred_sales"],
+        mode="lines+markers", name="Dự đoán đối chiếu (Test)",
+        line=dict(color="#ff7f0e", width=2, dash="dash")
+    ))
+
+    # Đường dự báo tương lai
+    connect_dates = [monthly["Order Date"].iloc[-1]] + list(future_dates)
+    connect_sales = [monthly["Sales"].iloc[-1]] + list(future_sales)
+
+    fig.add_trace(go.Scatter(
+        x=connect_dates, y=connect_sales,
+        mode="lines+markers", name=f"Dự báo {forecast_months} tháng tới",
+        line=dict(color="#d62728", width=2.5, dash="dot")
+    ))
+
+    apply_chart_theme(fig)
+    fig.update_layout(
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+
+    caption = (
+        f"Đánh giá kiểm thử ({test_months} tháng gần nhất): MAE = {mae:,.0f} | RMSE = {rmse:,.0f}. "
+        f"Xu hướng dài hạn: {full_model.coef_[0]:+,.0f} doanh thu/tháng "
+        f"(hồi quy tuyến tính trên {len(monthly)} tháng có giao dịch)."
+    )
+
     return fig, caption
