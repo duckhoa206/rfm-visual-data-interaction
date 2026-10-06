@@ -34,16 +34,16 @@ def compute_rfm(orders_df: pd.DataFrame, snapshot_date: pd.Timestamp | None = No
         Monetary=("Sales", "sum"),
     ).reset_index()
 
-    # Gắn vị trí phổ biến nhất trong đúng customer/source cohort.
-    locations = (
-        df.groupby(group_columns)
-        .agg(
-            Country=("Country", lambda values: values.mode().iloc[0]),
-            Region=("Region", lambda values: values.mode().iloc[0]),
+    # Gắn vị trí phổ biến nhất trong đúng customer/source cohort
+    location_cols = [c for c in ["Country", "Region"] if c in df.columns]
+    if location_cols:
+        agg_dict = {col: (col, lambda values: values.mode().iloc[0] if not values.empty else "Unknown") for col in location_cols}
+        locations = (
+            df.groupby(group_columns)
+            .agg(**agg_dict)
+            .reset_index()
         )
-        .reset_index()
-    )
-    rfm = rfm.merge(locations, on=group_columns, how="left")
+        rfm = rfm.merge(locations, on=group_columns, how="left")
 
     rfm["Monetary"] = rfm["Monetary"].round(2)
     return rfm
@@ -54,12 +54,15 @@ def score_rfm(rfm_df: pd.DataFrame) -> pd.DataFrame:
     Chia mỗi trục R, F, M thành 5 nhóm (1-5) bằng qcut, rồi gán nhãn Segment.
     Recency: số ngày CÀNG NHỎ càng tốt -> điểm 5 = gần đây nhất.
     Frequency, Monetary: giá trị CÀNG LỚN càng tốt -> điểm 5 = cao nhất.
+    
+    Sử dụng .rank(method="first") để tránh lỗi 'Bin edges must be unique'
+    khi dữ liệu thực tế có nhiều giá trị trùng lặp.
     """
     df = rfm_df.copy()
 
-    df["R_score"] = pd.qcut(df["Recency"], 5, labels=[5, 4, 3, 2, 1], duplicates="drop").astype(int)
-    df["F_score"] = pd.qcut(df["Frequency"].rank(method="first"), 5, labels=[1, 2, 3, 4, 5], duplicates="drop").astype(int)
-    df["M_score"] = pd.qcut(df["Monetary"], 5, labels=[1, 2, 3, 4, 5], duplicates="drop").astype(int)
+    df["R_score"] = pd.qcut(df["Recency"].rank(method="first"), 5, labels=[5, 4, 3, 2, 1]).astype(int)
+    df["F_score"] = pd.qcut(df["Frequency"].rank(method="first"), 5, labels=[1, 2, 3, 4, 5]).astype(int)
+    df["M_score"] = pd.qcut(df["Monetary"].rank(method="first"), 5, labels=[1, 2, 3, 4, 5]).astype(int)
 
     df["RFM_Score"] = df["R_score"].astype(str) + df["F_score"].astype(str) + df["M_score"].astype(str)
     df["Segment"] = df.apply(_assign_segment, axis=1)
