@@ -1,15 +1,18 @@
 # Nguồn dữ liệu
 
-Nguồn đầu vào được lưu trong `data/raw/`. Mọi bảng processed được tái tạo bằng `python scripts/clean_data.py`.	
+Nguồn đầu vào được lưu riêng trong `data/raw/`; các bảng đầu ra được lưu trong
+`data/processed/`. Cả hai thư mục được quản lý cùng repository để thành viên có thể
+lấy dữ liệu trực tiếp từ GitHub, không cần Google Drive. Mọi bảng processed có thể
+được tái tạo bằng `python scripts/clean_data.py`.
 
 ## Fact bán hàng
 
-| Nguồn                                                                                                     | Khoảng thời gian | Tình trạng/giới hạn                                                                                                                                                                                                                                                                                                                                                                                 |
-| ---------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Global Superstore                                                                                          | 2012–2015         | Nguồn đa quốc gia đang có; xem chi tiết kiểm tra EDA tại[members/eda.md](./members/eda.md).                                                                                                                                                                                                                                                                                                      |
-| Superstore 2015–2018                                                                                      | 2015–2018         | Nguồn Mỹ, dùng để bổ sung giai đoạn 2016–2018.                                                                                                                                                                                                                                                                                                                                                 |
-| [Kaggle: Global Electronics Retail](https://www.kaggle.com/datasets/faheem113141/global-electronics-retail) | 2019–2020         | License Kaggle công bố: MIT. File phát hành`SAC Retailer Dataset.xlsx`; bản kiểm tra có 20.281 dòng, 29 cột, 137 quốc gia và có đủ 10 trường nghiệp vụ cần cho pipeline. Tuy nhiên trang dataset không dẫn nguồn giao dịch gốc; provenance chưa được xác minh. Xem như dữ liệu demo/unverified, không trình bày như số liệu giao dịch thực đã kiểm toán. |
-| Superstore 2021–2024                                                                                      | 2021–2024         | Nguồn Mỹ/Canada đang có; xem chi tiết kiểm tra EDA tại[members/eda.md](./members/eda.md).                                                                                                                                                                                                                                                                                                         |
+| Nguồn | Khoảng thời gian | Tình trạng/giới hạn |
+| --- | --- | --- |
+| Global Superstore | 2012–2015 | Nguồn đa quốc gia đang có; xem chi tiết kiểm tra EDA tại [members/eda.md](./members/eda.md). |
+| Superstore 2015–2018 | 2015–2018 | Nguồn Mỹ, dùng để bổ sung giai đoạn 2016–2018. |
+| [Kaggle: Global Electronics Retail](https://www.kaggle.com/datasets/faheem113141/global-electronics-retail) | 2019–2020 | License Kaggle công bố: MIT. File phát hành `SAC Retailer Dataset.xlsx`; bản kiểm tra có 20.281 dòng, 29 cột, 137 quốc gia và có đủ 10 trường nghiệp vụ cần cho pipeline. Tuy nhiên trang dataset không dẫn nguồn giao dịch gốc; provenance chưa được xác minh. Xem như dữ liệu demo/unverified, không trình bày như số liệu giao dịch thực đã kiểm toán. |
+| Superstore 2021–2024 | 2021–2024 | Nguồn Mỹ/Canada đang có; xem chi tiết kiểm tra EDA tại [members/eda.md](./members/eda.md). |
 
 ### Kiểm tra nguồn Kaggle 2019–2020
 
