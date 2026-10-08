@@ -108,19 +108,24 @@ def run_pipeline() -> dict:
 
     return {
         "cleaned_data": len(orders_union),
+        "people_cleaned": len(people),
         "orders_enriched": len(orders_enriched),
+        "walmart_stores_cleaned": len(stores),
+        "walmart_features_cleaned": len(features),
+        "walmart_train_cleaned": len(train),
         "walmart_weekly_enriched": len(walmart_enriched),
         "bigmart": len(bigmart),
+        "bigmart_cleaned": len(bigmart),
         "rfm_customers": len(rfm_export),
         "monthly_sales": len(monthly),
     }
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Làm sạch + join toàn bộ dữ liệu.")
+    parser = argparse.ArgumentParser(description="Lam sach + join toan bo du lieu.")
     parser.add_argument(
         "raw_file", nargs="?", default=None,
-        help="(Tương thích cũ) CSV raw đơn lẻ; bỏ qua để chạy full pipeline.",
+        help="(Tuong thich cu) CSV raw don le; bo qua de chay full pipeline.",
     )
     args = parser.parse_args()
 
@@ -129,8 +134,34 @@ if __name__ == "__main__":
         if not raw_path.is_absolute():
             raw_path = ROOT_DIR / raw_path
         cleaned = clean_orders(raw_path, CLEAN_DATA_PATH)
-        print(f"Da lam sach {len(cleaned):,} dong -> {CLEAN_DATA_PATH}")
+        print(f"Da lam sach {len(cleaned):,} dong: {raw_path} -> {CLEAN_DATA_PATH}")
     else:
         stats = run_pipeline()
-        for name, count in stats.items():
-            print(f"{name}: {count:,} dong -> {PROCESSED_DIR}")
+        file_reports = [
+            ("cleaned_data.csv", "global_superstore_orders.csv + superstore_2015_2018.csv + global_electronics_retail_2019_2020.csv + superstore_2021_2024.csv (UNION)"),
+            ("people_cleaned.csv", "global_superstore_people.csv"),
+            ("orders_enriched.csv", "cleaned_data (UNION) LEFT JOIN people_cleaned ON Region"),
+            ("walmart_stores_cleaned.csv", "walmart_stores.csv"),
+            ("walmart_features_cleaned.csv", "walmart_features.csv"),
+            ("walmart_train_cleaned.csv", "walmart_train.csv"),
+            ("walmart_weekly_enriched.csv", "walmart_train LEFT JOIN features ON Store,Date + LEFT JOIN stores"),
+            ("bigmart_cleaned.csv", "bigmart_train.csv"),
+            ("rfm_customers.csv", "cleaned_data + people (build_rfm_export)"),
+            ("monthly_sales.csv", "cleaned_data (build_monthly_sales)"),
+        ]
+        stat_key_by_file = {
+            "cleaned_data.csv": "cleaned_data",
+            "people_cleaned.csv": "people_cleaned",
+            "orders_enriched.csv": "orders_enriched",
+            "walmart_stores_cleaned.csv": "walmart_stores_cleaned",
+            "walmart_features_cleaned.csv": "walmart_features_cleaned",
+            "walmart_train_cleaned.csv": "walmart_train_cleaned",
+            "walmart_weekly_enriched.csv": "walmart_weekly_enriched",
+            "bigmart_cleaned.csv": "bigmart_cleaned",
+            "rfm_customers.csv": "rfm_customers",
+            "monthly_sales.csv": "monthly_sales",
+        }
+        print(f"Hoan tat pipeline, thu muc dich: {PROCESSED_DIR}")
+        for filename, source_desc in file_reports:
+            count = stats.get(stat_key_by_file[filename], 0)
+            print(f"Da lam sach {count:,} dong: {source_desc} -> {PROCESSED_DIR / filename}")

@@ -34,4 +34,7 @@ tempCodeRunnerFile.py
 # không theo dõi thư mục specs
 specs/*
 
+# file trung gian của scripts/clean_data.py (tự xóa sau pipeline, không commit)
+data/processed/_tmp_*.csv
+
 
