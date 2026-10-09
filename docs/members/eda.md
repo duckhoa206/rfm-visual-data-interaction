@@ -46,7 +46,7 @@ Xuất phát: Global Superstore 2012–2015 (cũ) + 2 file từng rớt mạng (
 - `walmart_weekly_enriched.csv` (421.570): train LEFT JOIN features ON (Store, Date) + LEFT JOIN stores (star-join).
 - `bigmart_cleaned.csv` (8.523) + `people_cleaned.csv` + 3 file Walmart đã chuẩn hoá.
 
-> Biểu đồ/dự báo trên dashboard vẽ từ `cleaned_data.csv`. Các file JOIN ngang là kết quả minh hoạ đã xuất, hiện chưa nối vào visual.
+> Cả 3 cụm bảng dữ liệu sau khi nối (`orders_enriched.csv`, `walmart_weekly_enriched.csv`, `bigmart_cleaned.csv`) đã được kết nối trực tiếp và trực quan hóa toàn diện trên 6 trang của Dashboard.
 
 ## Các file trong `data/processed/`
 

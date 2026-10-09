@@ -33,20 +33,21 @@ rfm-visual-data-interaction/
 ├── data/
 │   ├── raw/                 # Dữ liệu đầu vào (xem docs/data_sources.md)
 │   └── processed/
-│       ├── cleaned_data.csv # Fact dashboard đọc (UNION 4 nguồn, có nhãn Data Source)
-│       ├── orders_enriched.csv, walmart_weekly_enriched.csv,
-│       ├── bigmart_cleaned.csv, people_cleaned.csv,  # Bảng JOIN minh hoạ
-│       └── rfm_customers.csv, monthly_sales.csv      # Bảng giao Insight & Forecast
+│       ├── orders_enriched.csv         # Core 1: Đơn hàng UNION 4 nguồn + LEFT JOIN People (Manager)
+│       ├── walmart_weekly_enriched.csv # Core 2: Star-Schema kết nối chuỗi siêu thị và biến vĩ mô
+│       ├── bigmart_cleaned.csv         # Core 3: Merchandising 8.523 mặt hàng và phân loại điểm bán
+│       ├── rfm_customers.csv           # Cache điểm số và phân khúc RFM khách hàng
+│       └── monthly_sales.csv           # Chuỗi thời gian tổng hợp phục vụ dự báo
 ├── scripts/
 │   └── clean_data.py        # Full pipeline: làm sạch + JOIN toàn bộ bảng
 ├── src/
 │   ├── dash_app/
 │   │   ├── app.py           # Khung chung: header (logo + bộ lọc) + sidebar + page_container
-│   │   ├── config.py        # Bảng PAGE_META: thêm/xóa/đổi tên/đổi thứ tự trang ở 1 chỗ
-│   │   ├── shared_data.py   # ORDERS/RFM/FILTER_OPTIONS tải 1 lần, mọi trang import
-│   │   ├── pages/           # overview.py (/) + geo.py, rfm.py, forecast.py
-│   │   └── components/      # header.py, sidebar.py, filters.py, charts.py
-│   └── shared/              # data_cleaning, data_service, rfm_utils, theme
+│   │   ├── config.py        # Bảng PAGE_META: cấu hình 6 trang dashboard
+│   │   ├── shared_data.py   # ORDERS/RFM/WALMART/BIGMART tải 1 lần tập trung có cache
+│   │   ├── pages/           # overview.py, geo.py, rfm.py, forecast.py, walmart.py, bigmart.py
+│   │   └── components/      # sidebar.py, filters.py, charts.py
+│   └── shared/              # data_cleaning, data_service, rfm_utils, theme, forecasting
 ├── assets/
 │   └── style.css            # Toàn bộ màu sắc/font/kích thước sửa ở 1 nơi
 ├── docs/
@@ -56,25 +57,17 @@ rfm-visual-data-interaction/
 └── README.md
 ```
 
-## Luồng dữ liệu
+## Luồng dữ liệu & 3 Mô hình Trung tâm
 
 ```text
-data/raw/*.csv → scripts/clean_data.py → data/processed/*.csv → Dash dashboard
+data/raw/*.csv → scripts/clean_data.py → 3 Core Datamarts (data/processed/) → Dash Dashboard (6 Trang)
 ```
 
-- Fact chính: `global_superstore_orders.csv` (2012–2015) UNION
-  `superstore_2015_2018.csv` (2015–2018, lấp 2016-2018) UNION
-  `global_electronics_retail_2019_2020.csv` (Kaggle, demo/provenance chưa xác minh) UNION
-  `superstore_2021_2024.csv` (2021–2024, gần 2026 nhất) → `cleaned_data.csv`
-  (10 cột nghiệp vụ + `Data Source`; nguồn demo 2019–2020 phải được tách/ghi rõ khi diễn giải).
-- JOIN minh hoạ: đơn hàng LEFT JOIN People theo Region (`orders_enriched.csv`);
-  Walmart train LEFT JOIN features theo (Store, Date) + LEFT JOIN stores
-  (`walmart_weekly_enriched.csv`); BigMart làm sạch đơn bảng (`bigmart_cleaned.csv`).
-- Chi tiết nguồn/license/giới hạn xem `docs/data_sources.md`; EDA và tỷ lệ khớp JOIN xem `docs/members/eda.md`.
+- **Mô hình 1 (Bán lẻ Đa kênh & RFM):** UNION 4 nguồn Superstore (2012–2024) LEFT JOIN People theo Region → `orders_enriched.csv` (có cột `Manager`), phục vụ các trang *Tổng quan*, *Địa lý*, *Phân khúc RFM* và *Dự báo chiến lược 2030*.
+- **Mô hình 2 (Chuỗi Siêu thị & Kinh tế Vĩ mô):** Walmart train LEFT JOIN features theo (Store, Date) + LEFT JOIN stores → `walmart_weekly_enriched.csv` (421.570 dòng), phục vụ trang *Chuỗi siêu thị Walmart*.
+- **Mô hình 3 (Trưng bày & Điểm bán FMCG):** 8.523 mặt hàng chuẩn hóa thuộc tính và phân loại điểm bán → `bigmart_cleaned.csv`, phục vụ trang *Trưng bày FMCG BigMart*.
 
-Dashboard chỉ đọc `data/processed/cleaned_data.csv` (qua `src/dash_app/shared_data.py`), không đọc trực tiếp `data/raw/`. Fact giữ 10 cột nghiệp vụ và thêm `Data Source` để truy dấu nguồn; dashboard có bộ lọc nguồn và cảnh báo riêng cho nguồn Kaggle demo. Không coi dữ liệu Kaggle là số liệu giao dịch đã kiểm chứng.
-
-`data/processed/` là thư mục output trung gian và là nguồn dữ liệu duy nhất được bàn giao cho Dashboard, RFM và Forecast. Không sửa trực tiếp `cleaned_data.csv`; mọi thay đổi phải bắt đầu từ file trong `data/raw/` và được tạo lại bằng pipeline.
+Dashboard tải dữ liệu tập trung qua `src/dash_app/shared_data.py` kết hợp caching RAM thông minh, không đọc trực tiếp file từ `data/raw/`. Mọi dữ liệu đã xử lý đều có thể tái tạo hoàn toàn bằng một câu lệnh `python scripts/clean_data.py`.
 
 ## Cài đặt và chạy dự án
 

@@ -7,31 +7,48 @@ loại bỏ mọi import streamlit để Dash dùng được.
 import plotly.graph_objects as go
 
 COLORS = {
-    "background": "#0B1220",
-    "surface": "#111C2E",
-    "surface_alt": "#18253A",
-    "text": "#E8EEF8",
-    "muted": "#94A3B8",
-    "primary": "#39B6FF",
+    "background": "#F1F5F9",
+    "surface": "#FFFFFF",
+    "surface_alt": "#EAF0F7",
+    "text": "#0F172A",
+    "muted": "#64748B",
+    "primary": "#0284C7",
     "secondary": "#7C5CFC",
-    "success": "#35D39E",
-    "warning": "#F7B955",
-    "danger": "#FF718B",
+    "success": "#059669",
+    "warning": "#D97706",
+    "danger": "#DC2626",
+    "slate": "#64748B",
 }
 
 
 def apply_chart_theme(fig: go.Figure) -> go.Figure:
-    """Áp dụng palette và typography chung cho mọi biểu đồ Plotly."""
+    """Palette nền sáng + legend đáy giữa (không đè lên biểu đồ).
+
+    Mọi legend nằm dưới vùng vẽ (y < 0) nên không bao giờ chồng title/chart,
+    kể cả khi có 6 mục như phân khúc RFM.
+    """
     fig.update_layout(
-        template="plotly_dark",
+        template="plotly_white",
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter, Arial, sans-serif", color=COLORS["text"]),
-        colorway=[COLORS["primary"], COLORS["secondary"], COLORS["success"], COLORS["warning"], COLORS["danger"]],
-        margin=dict(l=12, r=12, t=24, b=12),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        hoverlabel=dict(bgcolor="#18253A", font_color=COLORS["text"]),
+        font=dict(family="'Segoe UI', -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif", color=COLORS["text"]),
+        colorway=[
+            COLORS["primary"], "#0EA5E9", COLORS["success"],
+            COLORS["warning"], COLORS["danger"], COLORS["secondary"],
+        ],
+        margin=dict(l=12, r=12, t=16, b=72),
+        legend=dict(
+            orientation="h",
+            yanchor="top", y=-0.18,
+            xanchor="center", x=0.5,
+            font=dict(size=11, color=COLORS["muted"]),
+            itemwidth=30,
+            tracegroupgap=10,
+            title=None,
+        ),
+        hoverlabel=dict(bgcolor="#FFFFFF", font_color=COLORS["text"]),
+        uniformtext=dict(minsize=9, mode="hide"),
     )
-    fig.update_xaxes(showgrid=False, zeroline=False, linecolor="#2B3C57")
-    fig.update_yaxes(gridcolor="#23334B", zeroline=False)
+    fig.update_xaxes(showgrid=False, zeroline=False, linecolor="#CBD5E1")
+    fig.update_yaxes(gridcolor="#E2E8F0", zeroline=False)
     return fig

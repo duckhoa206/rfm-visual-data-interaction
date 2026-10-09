@@ -1,4 +1,5 @@
-"""Khung Hub-and-Spoke: header cố định (logo + bộ lọc) + sidebar + nội dung trang.
+"""Khung Hub-and-Spoke: sidebar trái liền khối (thương hiệu + điều hướng)
++ cột nội dung (bộ lọc gọn + trang).
 
 Chạy:  python src/dash_app/app.py   →  http://127.0.0.1:8050
 """
@@ -15,60 +16,109 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src.dash_app.components import filters, header, sidebar
+from src.dash_app.components import filters, sidebar
 from src.dash_app.shared_data import FILTER_OPTIONS, ORDERS, RFM
 
 app = Dash(
     __name__,
     use_pages=True,
     pages_folder=str(ROOT_DIR / "src" / "dash_app" / "pages"),
-    external_stylesheets=[dbc.themes.DARKLY],
+    external_stylesheets=[
+        dbc.themes.FLATLY,
+        "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css",
+    ],
     title="Phân tích bán lẻ RFM | HCMUTE",
     assets_folder=str(ROOT_DIR / "assets"),
 )
-server = app.server 
+server = app.server
 app.layout = dbc.Container(
     [
         dcc.Location(id="url"),
         dcc.Store(id="sidebar-store", data=False),
-        dbc.Alert(
-            [
-                "Lưu ý: dữ liệu 2019–2020 được bổ sung từ bộ Kaggle Global Electronics Retail; "
-                "provenance giao dịch chưa được xác minh. Hãy dùng bộ lọc Nguồn dữ liệu "
-                "để tách khỏi các nguồn còn lại. ",
-                html.A(
-                    "Xem trang nguồn",
-                    href="https://www.kaggle.com/datasets/faheem113141/global-electronics-retail",
-                    target="_blank",
-                    rel="noopener noreferrer",
-                    className="alert-link",
-                ),
-            ],
-            color="warning",
-            class_name="mb-2",
-        ),
-        dbc.Row(
-            [
-                dbc.Col(header.layout(), md=6),
-                dbc.Col(
-                    dbc.Card(
-                        dbc.CardBody([
-                            html.H2("Bộ lọc", className="section-title"),
-                            filters.layout(FILTER_OPTIONS),
-                        ]),
-                        className="section-card",
-                    ),
-                    md=6,
-                ),
-            ],
-            class_name="g-2",
-        ),
         html.Div(
             [
+                # Trái: thương hiệu + điều hướng liền một khối
                 sidebar.layout(),
-                html.Main(dash.page_container, id="page-content", className="content"),
+                # Phải: bộ lọc gọn + nội dung trang
+                html.Div(
+                    [
+                        dbc.Card(
+                            dbc.CardBody([
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [
+                                                html.Div(
+                                                    [
+                                                        html.Div(
+                                                            [
+                                                                html.H2(
+                                                                    "Bộ lọc",
+                                                                    className="section-title",
+                                                                ),
+                                                                html.Span(
+                                                                    "Mặc định",
+                                                                    id="filter-active-count",
+                                                                    className="filter-count-badge",
+                                                                ),
+                                                            ],
+                                                            className="filter-title-row",
+                                                        ),
+                                                        html.P(
+                                                            "Tinh chỉnh phạm vi phân tích theo khu vực, thời gian và phân khúc",
+                                                            className="filter-subtitle",
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                            className="filter-title-wrap",
+                                        ),
+                                        html.Div(
+                                            [
+                                                html.Span(
+                                                    [
+                                                        "Đơn hàng: ",
+                                                        html.B("—", id="scope-orders"),
+                                                    ],
+                                                    className="scope-pill",
+                                                ),
+                                                html.Span(
+                                                    [
+                                                        "Khách hàng: ",
+                                                        html.B("—", id="scope-customers"),
+                                                    ],
+                                                    className="scope-pill",
+                                                ),
+                                                html.Span(
+                                                    [
+                                                        "Dòng SP: ",
+                                                        html.B("—", id="scope-lines"),
+                                                    ],
+                                                    className="scope-pill",
+                                                ),
+                                                html.Button(
+                                                    "Đặt lại",
+                                                    id="filter-reset",
+                                                    n_clicks=0,
+                                                    className="filter-reset",
+                                                    title="Xóa mọi điều kiện lọc",
+                                                ),
+                                            ],
+                                            className="scope-panel",
+                                        ),
+                                    ],
+                                    className="section-head filter-head",
+                                ),
+                                filters.layout(FILTER_OPTIONS),
+                            ]),
+                            className="section-card filter-card",
+                        ),
+                        html.Main(dash.page_container, id="page-content", className="content"),
+                    ],
+                    className="main-column",
+                ),
             ],
-            className="body-row",
+            className="app-shell",
         ),
     ],
     fluid=True,

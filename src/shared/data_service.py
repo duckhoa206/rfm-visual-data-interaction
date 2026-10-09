@@ -17,16 +17,27 @@ from src.shared.rfm_utils import build_rfm_table
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
 CLEAN_DATA_PATH = ROOT_DIR / "data" / "processed" / "cleaned_data.csv"
+ENRICHED_DATA_PATH = ROOT_DIR / "data" / "processed" / "orders_enriched.csv"
+RFM_DATA_PATH = ROOT_DIR / "data" / "processed" / "rfm_customers.csv"
+WALMART_DATA_PATH = ROOT_DIR / "data" / "processed" / "walmart_weekly_enriched.csv"
+BIGMART_DATA_PATH = ROOT_DIR / "data" / "processed" / "bigmart_cleaned.csv"
+
+# Nguồn thử nghiệm vẫn có thể tồn tại trong fact để phục vụ các phân tích nội bộ,
+# nhưng không nên xuất hiện trong bộ lọc chính của dashboard.
+HIDDEN_FILTER_DATA_SOURCES = {
+    "Kaggle Global Electronics Retail (demo, unverified)",
+}
 
 
 def _read_orders_uncached() -> pd.DataFrame:
-    if not CLEAN_DATA_PATH.exists() or CLEAN_DATA_PATH.stat().st_size == 0:
+    path_to_read = ENRICHED_DATA_PATH if ENRICHED_DATA_PATH.exists() else CLEAN_DATA_PATH
+    if not path_to_read.exists() or path_to_read.stat().st_size == 0:
         raise FileNotFoundError(
             "Chưa có dữ liệu đã làm sạch. Hãy chạy: "
             "python scripts/clean_data.py"
         )
 
-    df = pd.read_csv(CLEAN_DATA_PATH, parse_dates=["Order Date"])
+    df = pd.read_csv(path_to_read, parse_dates=["Order Date"])
     missing_columns = sorted(set(REQUIRED_COLUMNS) - set(df.columns))
     if missing_columns:
         raise ValueError(
@@ -43,20 +54,40 @@ def _read_orders_uncached() -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def load_orders() -> pd.DataFrame:
-    """Đọc bảng đơn hàng đã làm sạch (cache trong RAM)."""
+    """Đọc bảng đơn hàng đã làm sạch kèm Manager nếu có (cache trong RAM)."""
     return _read_orders_uncached()
 
 
 @lru_cache(maxsize=1)
 def load_rfm() -> pd.DataFrame:
-    """Bảng RFM đầy đủ điểm số + segment (tính 1 lần duy nhất)."""
+    """Bảng RFM đầy đủ điểm số + segment (tải từ rfm_customers.csv hoặc tính mới)."""
+    if RFM_DATA_PATH.exists() and RFM_DATA_PATH.stat().st_size > 0:
+        return pd.read_csv(RFM_DATA_PATH)
     return build_rfm_table(load_orders())
 
 
+@lru_cache(maxsize=1)
+def load_walmart() -> pd.DataFrame:
+    """Đọc dữ liệu tuần Walmart đã nối (Train + Features + Stores)."""
+    if not WALMART_DATA_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(WALMART_DATA_PATH, parse_dates=["Date"])
+
+
+@lru_cache(maxsize=1)
+def load_bigmart() -> pd.DataFrame:
+    """Đọc dữ liệu mặt hàng và điểm bán BigMart đã làm sạch."""
+    if not BIGMART_DATA_PATH.exists():
+        return pd.DataFrame()
+    return pd.read_csv(BIGMART_DATA_PATH)
+
+
 def clear_cache() -> None:
-    """Xóa cache khi cleaned_data.csv được tạo lại (dùng trong test/dev)."""
+    """Xóa cache khi các file processed được tạo lại."""
     load_orders.cache_clear()
     load_rfm.cache_clear()
+    load_walmart.cache_clear()
+    load_bigmart.cache_clear()
 
 
 def get_filter_options(
@@ -72,7 +103,9 @@ def get_filter_options(
     }
     if DATA_SOURCE_COLUMN in orders.columns:
         options["data_sources"] = sorted(
-            orders[DATA_SOURCE_COLUMN].dropna().unique()
+            source
+            for source in orders[DATA_SOURCE_COLUMN].dropna().unique()
+            if source not in HIDDEN_FILTER_DATA_SOURCES
         )
     return options
 
