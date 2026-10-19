@@ -15,7 +15,6 @@ def layout() -> html.Div:
     return html.Div([
         html.H4("Phân khúc khách hàng RFM", className="page-title"),
         dbc.Alert(id="rfm-alert", color="warning", is_open=False, class_name="mb-2"),
-        # Hàng 1: Scatter cần rộng (8) + Pie gọn (4)
         dbc.Row(
             [
                 dbc.Col(
@@ -37,7 +36,6 @@ def layout() -> html.Div:
             ],
             class_name="g-2 mb-2",
         ),
-        # Hàng 2: Box full-width (cần ngang để so sánh phân phối)
         dbc.Card(dbc.CardBody([
             html.Div([html.H5("Phân phối chi tiêu theo phân khúc", className="chart-title"), html.Button([html.I(className="bi bi-arrows-fullscreen"), " Mở rộng"], id="rfm-expand-box", n_clicks=0, className="chart-expand")], className="chart-head"),
             dcc.Graph(id="rfm-box", config={"displaylogo": False},

@@ -33,7 +33,6 @@ def train_and_evaluate(df: pd.DataFrame, test_months: int = 12, target_year: int
     train_df = df.iloc[:-test_len].copy()
     test_df = df.iloc[-test_len:].copy()
 
-    # Mùa vụ tháng
     m_factors = train_df.groupby(train_df["Month"].dt.month)["Sales"].mean()
     m_overall = train_df["Sales"].mean() if train_df["Sales"].mean() > 0 else 1.0
     season_dict = (m_factors / m_overall).to_dict()
@@ -42,7 +41,6 @@ def train_and_evaluate(df: pd.DataFrame, test_months: int = 12, target_year: int
     test_factors = np.array([season_dict.get(m, 1.0) for m in test_df["Month"].dt.month])
     pred_test = np.maximum(0, (intercept + slope * test_df["t"].values) * test_factors)
 
-    # Baseline Naive
     naive_pred = [train_df["Sales"].iloc[-1]] + list(test_df["Sales"].iloc[:-1])
 
     def calc_metrics(y_true, y_pred):
@@ -56,7 +54,6 @@ def train_and_evaluate(df: pd.DataFrame, test_months: int = 12, target_year: int
         "Baseline_Naive": calc_metrics(test_df["Sales"], naive_pred),
     }
 
-    # Huấn luyện trên toàn bộ dữ liệu
     all_slope, all_intercept = np.polyfit(df["t"].values, df["Sales"].values, 1)
     all_factors = df.groupby(df["Month"].dt.month)["Sales"].mean()
     all_overall = df["Sales"].mean() if df["Sales"].mean() > 0 else 1.0
@@ -100,21 +97,18 @@ def create_forecast_figure(results: dict) -> go.Figure:
 
     fig = go.Figure()
 
-    # 1. Doanh thu thực tế (Train)
     fig.add_trace(go.Scatter(
         x=train_df["Month"], y=train_df["Sales"],
         mode="lines", name="Lịch sử (Train)",
         line=dict(color="#0284C7", width=2),
     ))
 
-    # 2. Doanh thu thực tế (Test)
     fig.add_trace(go.Scatter(
         x=test_df["Month"], y=test_df["Sales"],
         mode="lines+markers", name=f"Thực tế (Test {len(test_df)} tháng)",
         line=dict(color="#059669", width=2.5),
     ))
 
-    # 3. Dự đoán trên tập Test
     fig.add_trace(go.Scatter(
         x=test_df["Month"], y=test_df["pred_model"],
         mode="lines", name="Dự đoán Đối chiếu (Test)",
@@ -127,14 +121,12 @@ def create_forecast_figure(results: dict) -> go.Figure:
     connect_opt = [last_val] + list(future_df["opt_forecast"])
     connect_base = [last_val] + list(future_df["base_forecast"])
 
-    # 4. Kịch bản Thận trọng
     fig.add_trace(go.Scatter(
         x=connect_dates, y=connect_pess,
         mode="lines", name="Kịch bản Thận trọng (-15%)",
         line=dict(color="#EF4444", width=1.5, dash="dash"),
     ))
 
-    # 5. Kịch bản Lạc quan
     fig.add_trace(go.Scatter(
         x=connect_dates, y=connect_opt,
         mode="lines", name="Kịch bản Lạc quan (+20%)",
@@ -142,7 +134,6 @@ def create_forecast_figure(results: dict) -> go.Figure:
         fill="tonexty", fillcolor="rgba(2, 132, 199, 0.08)",
     ))
 
-    # 6. Kịch bản Cơ sở
     fig.add_trace(go.Scatter(
         x=connect_dates, y=connect_base,
         mode="lines", name=f"Kịch bản Cơ sở (Đến {target_year})",

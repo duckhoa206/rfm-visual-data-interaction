@@ -31,6 +31,32 @@ Dữ liệu được làm sạch và lưu trong `data/processed/`. Thông tin ng
 
 ## Cài đặt và chạy
 
+### Linux (máy hiện tại)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python src/dash_app/app.py
+```
+
+Nếu lệnh tạo môi trường báo thiếu `ensurepip`, cài gói `python3-venv`
+phù hợp với phiên bản Python của máy rồi tạo lại môi trường.
+Chỉ cần chạy `python scripts/clean_data.py` khi cần tạo lại dữ liệu trong
+`data/processed/`.
+
+Sau khi đã cài đặt, mỗi lần mở terminal mới chỉ cần chạy:
+
+```bash
+source .venv/bin/activate
+python src/dash_app/app.py
+```
+
+Không sao chép `.venv` giữa các máy; tạo lại môi trường và cài thư viện.
+Cấu hình triển khai trong repo sử dụng Python 3.12.8.
+
+### Windows
+
 ```cmd
 py -3.12 -m venv .venv
 .venv\Scripts\activate.bat

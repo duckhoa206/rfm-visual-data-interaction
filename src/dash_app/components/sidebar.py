@@ -1,7 +1,4 @@
-"""Sidebar trái liền khối: thương hiệu HCMUTE + điều hướng icon + label,
-highlight trang đang chọn, nút thu gọn/mở rộng.
-Khi rút gọn chỉ hiện icon (có tooltip tên trang).
-Mục tự sinh từ dash.page_registry (sắp xếp theo order)."""
+"""Điều hướng từ dash.page_registry, sắp xếp theo order."""
 
 import base64
 from pathlib import Path
@@ -14,7 +11,6 @@ ROOT_DIR = Path(__file__).resolve().parents[3]
 LOGO_PATH = ROOT_DIR / "assets" / "Logo HCM-UTE.png"
 FALLBACK_LOGO_PATH = ROOT_DIR / "assets" / "hcmute-sidebar-brand.png"
 
-# Icon Bootstrap (chuẩn, không phải AI) cho từng trang, map theo path.
 ICONS = {
     "/": "bi-speedometer2",
     "/geo": "bi-map",

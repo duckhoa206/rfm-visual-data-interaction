@@ -1,4 +1,3 @@
-# Python bytecode and tool caches
 __pycache__/
 *.py[cod]
 *.so
@@ -8,34 +7,24 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Virtual environments and local configuration
 .venv/
 venv/
 env/
 .env
 .envrc
 
-# Streamlit secrets must never be committed
 .streamlit/secrets.toml
 
-# IDE and operating-system files
-.vscode/*
-!.vscode/settings.json
+.vscode/
 .idea/
 .DS_Store
 Thumbs.db
 tempCodeRunnerFile.py
 
-# không ignore .gitkeep giữ khung thư mục
 !**/.gitkeep
 
-# không theo dõi thư mục specs
 specs/*
 
-# file trung gian của scripts/clean_data.py (tự xóa sau pipeline, không commit)
 data/processed/_tmp_*.csv
 
-# File HTML xuất khi chạy thử dự báo, không đưa lên repository
 forecast_output.html
-
-

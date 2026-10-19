@@ -1,20 +1,4 @@
-"""Pipeline làm sạch + kết nối toàn bộ dữ liệu thô cho dashboard.
-
-Fact chính (dashboard đọc duy nhất file này):
-  data/raw/global_superstore_orders.csv (2012-2015, 165 quốc gia)
-  + data/raw/superstore_2015_2018.csv (2015-2018, Mỹ — lấp 2016-2018)
-  + data/raw/global_electronics_retail_2019_2020.csv (Kaggle, demo/unverified)
-  + data/raw/superstore_2021_2024.csv (2021-2024, Mỹ/Canada — gần 2026 nhất)
-  UNION → data/processed/cleaned_data.csv (10 cột nghiệp vụ + Data Source).
-  Cột Data Source cho phép truy vết/tách cohort; nguồn Kaggle được cảnh báo trên dashboard.
-
-Bảng phụ (làm sạch + join minh hoạ, không phá pipeline cũ):
-  people_cleaned.csv, walmart_*_cleaned.csv, walmart_weekly_enriched.csv
-  (train LEFT JOIN features ON Store,Date + LEFT JOIN stores),
-  bigmart_cleaned.csv, orders_enriched.csv (UNION LEFT JOIN people ON Region).
-
-Chạy:  python scripts/clean_data.py
-"""
+"""Làm sạch và nối dữ liệu Superstore, Walmart và BigMart."""
 
 import argparse
 from pathlib import Path
@@ -47,7 +31,6 @@ CLEAN_DATA_PATH = PROCESSED_DIR / "cleaned_data.csv"
 def run_pipeline() -> dict:
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    # 1. Fact đơn hàng: UNION bốn nguồn có nhãn provenance.
     orders_global = clean_orders(
         RAW_DIR / "global_superstore_orders.csv",
         PROCESSED_DIR / "_tmp_global.csv",
@@ -73,7 +56,6 @@ def run_pipeline() -> dict:
     )
     orders_union.to_csv(CLEAN_DATA_PATH, index=False)
 
-    # 2. People (JOIN key Region).
     people = clean_people(
         RAW_DIR / "global_superstore_people.csv",
         PROCESSED_DIR / "people_cleaned.csv",
@@ -81,7 +63,6 @@ def run_pipeline() -> dict:
     orders_enriched = join_orders_people(orders_union, people)
     orders_enriched.to_csv(PROCESSED_DIR / "orders_enriched.csv", index=False)
 
-    # 3. Walmart star-schema.
     stores = clean_walmart_stores(
         RAW_DIR / "walmart_stores.csv", PROCESSED_DIR / "walmart_stores_cleaned.csv")
     features = clean_walmart_features(
@@ -91,11 +72,9 @@ def run_pipeline() -> dict:
     walmart_enriched = join_walmart_weekly(train, features, stores)
     walmart_enriched.to_csv(PROCESSED_DIR / "walmart_weekly_enriched.csv", index=False)
 
-    # 4. BigMart (đơn bảng, không join ngoài).
     bigmart = clean_bigmart(
         RAW_DIR / "bigmart_train.csv", PROCESSED_DIR / "bigmart_cleaned.csv")
 
-    # 5. Bảng giao cho Insight & Forecast: RFM kèm Manager + chuỗi tháng.
     rfm_export = build_rfm_export(orders_union, people)
     rfm_export.to_csv(PROCESSED_DIR / "rfm_customers.csv", index=False)
     monthly = build_monthly_sales(orders_union)

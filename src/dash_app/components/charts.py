@@ -1,8 +1,4 @@
-"""Hàm dựng biểu đồ + thẻ KPI dùng chung cho mọi trang.
-
-Đổi style một lần ở đây (hoặc assets/style.css) là áp dụng toàn bộ.
-Các trang chỉ gọi hàm, không tự code figure.
-"""
+"""Biểu đồ và thẻ KPI dùng chung."""
 
 import dash_bootstrap_components as dbc
 import numpy as np
@@ -43,7 +39,6 @@ def build_bar_category(orders_filtered: pd.DataFrame) -> go.Figure:
     by_cat = orders_filtered.groupby("Category", as_index=False)["Sales"].sum()
     fig = px.bar(by_cat, x="Category", y="Sales", color="Category")
     apply_chart_theme(fig)
-    # Màu đã mã hóa ngay trên trục X → ẩn legend thừa, xoay nhãn cho khỏi đè.
     fig.update_layout(showlegend=False, margin=dict(l=12, r=12, t=16, b=84))
     fig.update_xaxes(tickangle=-15, automargin=True)
     fig.update_yaxes(tickformat=",.0f")
@@ -62,7 +57,6 @@ def build_line_monthly(orders_filtered: pd.DataFrame) -> go.Figure:
     fig.update_traces(connectgaps=False)
     fig.update_traces(line=dict(width=3))
     apply_chart_theme(fig)
-    # Chỉ 1 đường duy nhất → ẩn legend cho thoáng.
     fig.update_layout(showlegend=False, margin=dict(l=12, r=12, t=16, b=48))
     fig.update_yaxes(tickformat=",.0f")
     return fig
@@ -73,7 +67,6 @@ def build_geo_figure(chart: str, orders_filtered: pd.DataFrame) -> go.Figure:
         fig = px.treemap(
             orders_filtered, path=["Region", "Country", "Category"], values="Sales")
         apply_chart_theme(fig)
-        # Nhãn đã nằm trong từng ô → ẩn legend.
         fig.update_layout(showlegend=False, margin=dict(l=12, r=12, t=16, b=24))
         return fig
     elif chart == "heatmap":
@@ -117,7 +110,6 @@ def build_rfm_figure(chart: str, rfm_filtered: pd.DataFrame) -> go.Figure:
             rfm_filtered, x="Frequency", y="Monetary", color="Segment",
             size="Monetary", hover_data=["Customer ID", "Recency"])
         apply_chart_theme(fig)
-        # Bong bóng mờ + giới hạn size để bớt đè nhau; legend đáy giữa.
         fig.update_traces(marker=dict(opacity=0.65, line=dict(width=0)), selector=dict(mode="markers"))
         fig.update_traces(marker=dict(sizeref=2.0 * rfm_filtered["Monetary"].max() / (18 ** 2)) if not rfm_filtered.empty else {})
         fig.update_layout(legend_title_text="Phân khúc")
@@ -126,7 +118,6 @@ def build_rfm_figure(chart: str, rfm_filtered: pd.DataFrame) -> go.Figure:
     elif chart == "box":
         fig = px.box(rfm_filtered, x="Segment", y="Monetary", color="Segment")
         apply_chart_theme(fig)
-        # Trục X đã là tên nhóm → ẩn legend trùng lặp.
         fig.update_layout(showlegend=False, margin=dict(l=12, r=12, t=16, b=96))
         fig.update_xaxes(tickangle=-15, automargin=True)
         fig.update_yaxes(tickformat=",.0f")
@@ -136,7 +127,6 @@ def build_rfm_figure(chart: str, rfm_filtered: pd.DataFrame) -> go.Figure:
         seg_count.columns = ["Segment", "Count"]
         fig = px.pie(seg_count, names="Segment", values="Count", hole=0.4)
         apply_chart_theme(fig)
-        # % nằm trong lát cắt, tên nhóm xuống legend đáy — hết chồng chữ.
         fig.update_traces(
             textinfo="percent", textposition="inside",
             textfont_size=11, insidetextorientation="radial",
@@ -156,7 +146,6 @@ def build_forecast_figure(orders_filtered: pd.DataFrame, test_months: int = 3, f
 
 
 def build_manager_performance(orders_filtered: pd.DataFrame) -> go.Figure:
-    """Biểu đồ hiệu suất Quản lý khu vực (từ bảng People JOIN vào orders)."""
     if orders_filtered.empty or "Manager" not in orders_filtered.columns:
         return blank_figure()
     df_mgr = orders_filtered.dropna(subset=["Manager"])
@@ -192,7 +181,6 @@ def build_manager_performance(orders_filtered: pd.DataFrame) -> go.Figure:
 
 
 def build_walmart_correlation(walmart_df: pd.DataFrame) -> go.Figure:
-    """Ma trận tương quan giữa Doanh số tuần và các biến kinh tế vĩ mô."""
     if walmart_df.empty:
         return blank_figure()
     cols = ["Weekly_Sales", "Temperature", "Fuel_Price", "CPI", "Unemployment", "Size"]
@@ -229,7 +217,6 @@ def build_walmart_correlation(walmart_df: pd.DataFrame) -> go.Figure:
 
 
 def build_walmart_holiday_impact(walmart_df: pd.DataFrame) -> go.Figure:
-    """So sánh doanh số tuần bình thường vs tuần lễ hội (Holiday Uplift) theo Loại siêu thị."""
     if walmart_df.empty or "Type" not in walmart_df.columns or "IsHoliday" not in walmart_df.columns:
         return blank_figure()
 
@@ -256,7 +243,6 @@ def build_walmart_holiday_impact(walmart_df: pd.DataFrame) -> go.Figure:
 
 
 def build_walmart_store_types(walmart_df: pd.DataFrame) -> go.Figure:
-    """Mối quan hệ giữa Diện tích (Size sqft), Doanh số trung bình tuần và Loại siêu thị A/B/C."""
     if walmart_df.empty or "Store" not in walmart_df.columns:
         return blank_figure()
 
@@ -287,7 +273,6 @@ def build_walmart_store_types(walmart_df: pd.DataFrame) -> go.Figure:
 
 
 def build_walmart_markdown_impact(walmart_df: pd.DataFrame) -> go.Figure:
-    """Tổng ngân sách và quy mô 5 chương trình khuyến mãi MarkDown 1-5."""
     if walmart_df.empty:
         return blank_figure()
     md_cols = [f"MarkDown{i}" for i in range(1, 6) if f"MarkDown{i}" in walmart_df.columns]
@@ -316,7 +301,6 @@ def build_walmart_markdown_impact(walmart_df: pd.DataFrame) -> go.Figure:
 
 
 def build_bigmart_mrp_vs_sales(bigmart_df: pd.DataFrame) -> go.Figure:
-    """Tương quan mạnh mẽ giữa Giá niêm yết (Item_MRP) và Doanh số bán ra (Item_Outlet_Sales)."""
     if bigmart_df.empty:
         return blank_figure()
     sample_df = bigmart_df.sample(n=min(1200, len(bigmart_df)), random_state=42)
@@ -338,7 +322,6 @@ def build_bigmart_mrp_vs_sales(bigmart_df: pd.DataFrame) -> go.Figure:
 
 
 def build_bigmart_outlet_performance(bigmart_df: pd.DataFrame) -> go.Figure:
-    """So sánh doanh số trung bình theo Cấp bậc đô thị (Tier 1-3) và Loại hình điểm bán."""
     if bigmart_df.empty:
         return blank_figure()
     agg = bigmart_df.groupby(["Outlet_Location_Type", "Outlet_Type"], as_index=False)["Item_Outlet_Sales"].mean()
@@ -358,7 +341,6 @@ def build_bigmart_outlet_performance(bigmart_df: pd.DataFrame) -> go.Figure:
 
 
 def build_bigmart_category_sales(bigmart_df: pd.DataFrame) -> go.Figure:
-    """Phân bổ Giá niêm yết (MRP) theo từng Nhóm ngành hàng FMCG (Item_Type)."""
     if bigmart_df.empty:
         return blank_figure()
     fig = px.box(
@@ -376,7 +358,6 @@ def build_bigmart_category_sales(bigmart_df: pd.DataFrame) -> go.Figure:
 
 
 def build_bigmart_visibility_sales(bigmart_df: pd.DataFrame) -> go.Figure:
-    """Độ hiển thị quầy kệ (Item_Visibility) vs Doanh số bán lẻ."""
     if bigmart_df.empty:
         return blank_figure()
     sample_df = bigmart_df.sample(n=min(1200, len(bigmart_df)), random_state=42)

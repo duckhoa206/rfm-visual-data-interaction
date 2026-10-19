@@ -177,7 +177,6 @@ def build_regional_forecast_figure(orders_filtered, target_year=2030, projection
     fig = px.bar(pd.DataFrame(rows), x="Khu vực", y="Doanh thu", color="Loại", barmode="group",
                  color_discrete_map={"Thực tế trong khoảng": "#94A3B8", "Dự báo trong khoảng": "#0284C7"})
     _finish(fig, p)
-    # Trục X là khu vực, không phải năm.
     fig.update_xaxes(title="Khu vực", type="category", range=None, dtick=None,
                      tickangle=-15, automargin=True)
     return fig

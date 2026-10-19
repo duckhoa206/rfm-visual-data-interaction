@@ -32,7 +32,6 @@ def layout() -> html.Div:
             ),
         ]),
 
-        # Bộ lọc nội bộ cho trang Walmart
         dbc.Card(dbc.CardBody([
             dbc.Row([
                 dbc.Col([
@@ -53,7 +52,6 @@ def layout() -> html.Div:
             ], class_name="align-items-center"),
         ]), className="section-card mb-2 p-2"),
 
-        # Hàng KPI
         dbc.Row([
             dbc.Col(kpi_card("Tổng doanh số tuần", "walmart-kpi-sales"), xs=12, sm=6, md=3),
             dbc.Col(kpi_card("Số siêu thị", "walmart-kpi-stores"), xs=12, sm=6, md=3),
@@ -61,7 +59,6 @@ def layout() -> html.Div:
             dbc.Col(kpi_card("Tăng doanh số tuần lễ", "walmart-kpi-lift"), xs=12, sm=6, md=3),
         ], className="g-2 kpi-row mb-2"),
 
-        # Hàng 1: Ma trận Tương quan Vĩ mô + Hiệu ứng Dịp lễ
         dbc.Row([
             dbc.Col(
                 dbc.Card(dbc.CardBody([
@@ -83,7 +80,6 @@ def layout() -> html.Div:
             ),
         ], className="g-2 mb-2"),
 
-        # Hàng 2: Quy mô Cửa hàng + Khuyến mãi Markdown
         dbc.Row([
             dbc.Col(
                 dbc.Card(dbc.CardBody([
@@ -105,7 +101,6 @@ def layout() -> html.Div:
             ),
         ], className="g-2 mb-2"),
 
-        # Bảng Insight Nghiệp vụ
         dbc.Card(dbc.CardBody([
             html.H6("💡 Insight Nghiệp vụ Chuỗi bán lẻ Walmart:", className="text-secondary fw-bold"),
             dbc.Table([
@@ -160,12 +155,10 @@ def _update_walmart(selected_type):
         blank = blank_figure()
         return blank, blank, blank, blank, "—", "—", "—", "—"
 
-    # Tính KPIs
     total_sales = df["Weekly_Sales"].sum()
     n_stores = df["Store"].nunique()
     avg_sales = df["Weekly_Sales"].mean()
 
-    # Tính Holiday Lift
     hol_sales = df[df["IsHoliday"] == True]["Weekly_Sales"].mean()
     non_hol_sales = df[df["IsHoliday"] == False]["Weekly_Sales"].mean()
     lift_pct = ((hol_sales / non_hol_sales) - 1.0) * 100 if non_hol_sales > 0 else 0.0

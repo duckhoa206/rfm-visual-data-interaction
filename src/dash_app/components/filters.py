@@ -39,7 +39,6 @@ def _field(label: str, control) -> html.Div:
 
 
 def layout(options: dict) -> html.Div:
-    """Grid 5 control: 2+3+3+2+2 = 12 cột, gọn 1 hàng trên desktop."""
     date_min = pd.Timestamp(options["date_min"]).date()
     date_max = pd.Timestamp(options["date_max"]).date()
     return html.Div(
@@ -177,8 +176,6 @@ def register_callbacks(app, orders: pd.DataFrame, rfm: pd.DataFrame) -> None:
                 normalized.append(no_update)
         return tuple(normalized) if changed else (no_update, no_update, no_update, no_update)
 
-    """CB-FILTER-1 drill-down Region→Country, CB-FILTER-2 lưu store,
-    CB-FILTER-3 reset, CB-SCOPE đếm phạm vi + badge đang lọc."""
 
     @app.callback(
         Output("country-dd", "options", allow_duplicate=True),

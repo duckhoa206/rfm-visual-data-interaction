@@ -1,8 +1,4 @@
-"""Theme dùng chung cho Streamlit và Dash (không phụ thuộc framework UI).
-
-Copy palette COLORS + apply_chart_theme() từ src/shared/ui.py,
-loại bỏ mọi import streamlit để Dash dùng được.
-"""
+"""Màu sắc và định dạng biểu đồ dùng chung."""
 
 import plotly.graph_objects as go
 
@@ -22,11 +18,7 @@ COLORS = {
 
 
 def apply_chart_theme(fig: go.Figure) -> go.Figure:
-    """Palette nền sáng + legend đáy giữa (không đè lên biểu đồ).
-
-    Mọi legend nằm dưới vùng vẽ (y < 0) nên không bao giờ chồng title/chart,
-    kể cả khi có 6 mục như phân khúc RFM.
-    """
+    """Áp dụng nền sáng và đặt chú giải bên dưới biểu đồ."""
     fig.update_layout(
         template="plotly_white",
         paper_bgcolor="rgba(0,0,0,0)",

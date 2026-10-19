@@ -156,7 +156,6 @@ def layout() -> html.Div:
         ]), className="section-card forecast-range-card"),
         dbc.Alert(id="forecast-alert", color="warning", is_open=False, class_name="mb-3"),
 
-        # KPI tính theo khoảng năm đang chọn.
         dbc.Row([
             dbc.Col(_forecast_kpi("Doanh thu cuối kỳ", "forecast-kpi-end-label", "forecast-kpi-2030"), xs=12, sm=6, md=3),
             dbc.Col(_forecast_kpi("Tổng doanh thu trong khoảng", "forecast-kpi-cum-label", "forecast-kpi-cum"), xs=12, sm=6, md=3),
@@ -164,7 +163,6 @@ def layout() -> html.Div:
             dbc.Col(_forecast_kpi("Sai số kiểm thử MAE ($/tháng)", "forecast-kpi-mae-label", "forecast-kpi-mae"), xs=12, sm=6, md=3),
         ], className="g-2 kpi-row"),
 
-        # Hàng 2: Biểu đồ chính Dự báo dài hạn 3 Kịch bản
         dbc.Card(dbc.CardBody([
             html.Div([
                 html.Div([html.H5("Doanh thu theo năm & Kịch bản", id="forecast-main-title", className="chart-title"), html.Button([html.I(className="bi bi-arrows-fullscreen"), " Mở rộng"], id="forecast-expand-main", n_clicks=0, className="chart-expand")], className="chart-head"),
@@ -190,7 +188,6 @@ def layout() -> html.Div:
                       style={"height": 450}),
         ]), className="section-card"),
 
-        # Hàng 3: Hai biểu đồ Phân tích Danh mục & Khu vực
         dbc.Row([
             dbc.Col(
                 dbc.Card(dbc.CardBody([
@@ -216,7 +213,6 @@ def layout() -> html.Div:
             ),
         ], className="g-2 mb-2"),
 
-        # Hàng 4: Biểu đồ Sản lượng & Lợi nhuận
         dbc.Card(dbc.CardBody([
             html.Div([html.H5("Sản lượng & Lợi nhuận", id="forecast-qp-title", className="chart-title"), html.Button([html.I(className="bi bi-arrows-fullscreen"), " Mở rộng"], id="forecast-expand-quantity", n_clicks=0, className="chart-expand")], className="chart-head"),
             html.P(
@@ -226,7 +222,6 @@ def layout() -> html.Div:
             dcc.Graph(id="forecast-qp-graph", config={"displaylogo": False}, style={"height": 380}),
         ]), className="section-card"),
 
-        # Hàng 5: Bảng Kế hoạch Chiến lược 3 Giai đoạn
         dbc.Card(dbc.CardBody([
             html.H6("Kế hoạch hành động theo khoảng chọn", id="forecast-plan-title", className="text-secondary fw-bold"),
             dbc.Table([
@@ -313,7 +308,6 @@ def _update(store, period, optimistic_weight, cautious_weight):
     fig_reg = build_regional_forecast_figure(orders_f, projection=projection)
     fig_qp = build_quantity_profit_forecast_figure(orders_f, projection=projection)
 
-    # Format KPI values
     val_end = f"${kpis.get('annual_2030', 0):,.0f}"
     val_cum = f"${kpis.get('cum_sales', 0):,.0f}"
     cagr_val = kpis.get("cagr", 0.0)

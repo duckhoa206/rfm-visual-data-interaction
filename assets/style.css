@@ -1,6 +1,3 @@
-/* Giao diện nền sáng của dashboard (màu, font, kích thước sửa ở đây).
-   Font hệ thống ưu tiên Segoe UI: dễ đọc nhất trên trình duyệt Windows. */
-
 body {
   background: #F1F5F9;
   color: #0F172A;
@@ -24,7 +21,6 @@ body {
   padding: 0;
 }
 
-/* Khung 2 cột full-height: sidebar trái + cột nội dung phải */
 .app-shell {
   display: flex;
   gap: 0;
@@ -47,7 +43,6 @@ body {
   z-index: 1;
 }
 
-/* Sidebar full-height chạm đỉnh/chân trang, nút ghim đáy */
 .sidebar {
   width: 264px;
   flex-shrink: 0;
@@ -204,7 +199,6 @@ body {
   background: #E0F2FE;
 }
 
-/* ===== Filter bar gán cứng trên cùng, không icon ===== */
 .filter-card {
   margin-bottom: 0;
   border-radius: 0 0 14px 14px;
@@ -266,7 +260,6 @@ body {
 }
 .filter-control { min-width: 0; }
 
-/* Khoảng hiển thị riêng của dashboard dự báo. */
 .forecast-range-card { position: relative; z-index: 5; overflow: visible; }
 .forecast-range-toolbar {
   display: flex;
@@ -334,7 +327,6 @@ body {
 .forecast-weight .rc-slider-track { background: #60A5FA; }
 .forecast-weight .rc-slider-handle { border-color: #2563EB; box-shadow: none; }
 
-/* --- dcc.Dropdown (react-select): ghi đè tím mặc định → trắng/xanh slate --- */
 .pro-dropdown { font-size: 13.5px; }
 .pro-dropdown .Select-control {
   height: 40px;
@@ -397,7 +389,6 @@ body {
 }
 .pro-dropdown .Select-noresults { color: #94A3B8; font-size: 13px; padding: 10px 12px; }
 
-/* --- DatePickerRange: cùng chiều cao 40px, viền đồng bộ dropdown --- */
 .pro-date { width: 100%; }
 .pro-date .DateRangePicker { width: 100%; }
 .pro-date .DateRangePickerInput {
@@ -444,7 +435,6 @@ body {
   position: absolute !important;
 }
 
-/* KPI */
 .kpi-row { margin-bottom: .75rem; }
 .kpi-card {
   background: #FFFFFF;
@@ -457,7 +447,6 @@ body {
 .kpi-title { color: #64748B; font-size: .78rem; font-weight: 600; }
 .kpi-value { color: #0F172A; font-size: 1.35rem; font-weight: 700; }
 
-/* Thẻ nội dung */
 .section-card {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
@@ -507,7 +496,6 @@ body {
   margin: 0 0 .5rem;
 }
 
-/* ===== Bảng RFM: gọn, không hàng "filter data...", phân trang gọn ===== */
 .dash-table-container .dash-spreadsheet-container {
   border: none !important;
   font-family: "Segoe UI", -apple-system, Roboto, Arial, sans-serif;

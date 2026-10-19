@@ -1,9 +1,4 @@
-"""Nguồn dữ liệu duy nhất cho mọi trang Dash.
-
-Các trang CHỈ import ORDERS / RFM / FILTER_OPTIONS từ đây —
-không đọc CSV, không chạy lại pipeline trong từng trang.
-Dữ liệu đã làm sạch bởi scripts/clean_data.py.
-"""
+"""Dữ liệu dùng chung, nạp một lần khi khởi động dashboard."""
 
 from src.shared import data_service
 

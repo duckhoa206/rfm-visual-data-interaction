@@ -1,11 +1,4 @@
-"""
-Logic tính RFM DÙNG CHUNG cho toàn bộ dashboard.
-
-QUAN TRỌNG: đây là file duy nhất được phép chứa công thức tính RFM.
-Mọi trang trong src/dash_app/pages/ chỉ được GỌI các hàm ở đây (qua
-src/dash_app/shared_data.py), không được tự viết lại công thức riêng
--> tránh lệch số liệu giữa các trang.
-"""
+"""Tính điểm và phân khúc RFM dùng chung cho dashboard."""
 
 import pandas as pd
 
@@ -50,14 +43,7 @@ def compute_rfm(orders_df: pd.DataFrame, snapshot_date: pd.Timestamp | None = No
 
 
 def score_rfm(rfm_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Chia mỗi trục R, F, M thành 5 nhóm (1-5) bằng qcut, rồi gán nhãn Segment.
-    Recency: số ngày CÀNG NHỎ càng tốt -> điểm 5 = gần đây nhất.
-    Frequency, Monetary: giá trị CÀNG LỚN càng tốt -> điểm 5 = cao nhất.
-    
-    Sử dụng .rank(method="first") để tránh lỗi 'Bin edges must be unique'
-    khi dữ liệu thực tế có nhiều giá trị trùng lặp.
-    """
+    """Chấm điểm 1–5; rank trước qcut để xử lý các giá trị trùng nhau."""
     df = rfm_df.copy()
 
     df["R_score"] = pd.qcut(df["Recency"].rank(method="first"), 5, labels=[5, 4, 3, 2, 1]).astype(int)
@@ -85,7 +71,6 @@ def _assign_segment(row) -> str:
 
 
 def build_rfm_table(orders_df: pd.DataFrame) -> pd.DataFrame:
-    """Hàm tiện ích: gọi 1 lần là ra bảng RFM đầy đủ điểm số + segment."""
     rfm = compute_rfm(orders_df)
     rfm = score_rfm(rfm)
     return rfm

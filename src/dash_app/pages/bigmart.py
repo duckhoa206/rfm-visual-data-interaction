@@ -33,7 +33,6 @@ def layout() -> html.Div:
             ),
         ]),
 
-        # Bộ lọc nội bộ cho trang BigMart
         dbc.Card(dbc.CardBody([
             dbc.Row([
                 dbc.Col([
@@ -56,7 +55,6 @@ def layout() -> html.Div:
             ], class_name="align-items-center"),
         ]), className="section-card mb-2 p-2"),
 
-        # Hàng KPI
         dbc.Row([
             dbc.Col(kpi_card("Tổng Doanh số Điểm bán", "bigmart-kpi-sales"), xs=12, sm=6, md=3),
             dbc.Col(kpi_card("Số Mặt hàng Quan sát", "bigmart-kpi-items"), xs=12, sm=6, md=3),
@@ -64,7 +62,6 @@ def layout() -> html.Div:
             dbc.Col(kpi_card("Giá Niêm yết (MRP) Bình quân", "bigmart-kpi-mrp"), xs=12, sm=6, md=3),
         ], className="g-2 kpi-row mb-2"),
 
-        # Hàng 1: Giá niêm yết vs Doanh số + Hiệu quả theo Cấp đô thị
         dbc.Row([
             dbc.Col(
                 dbc.Card(dbc.CardBody([
@@ -86,7 +83,6 @@ def layout() -> html.Div:
             ),
         ], className="g-2 mb-2"),
 
-        # Hàng 2: Phân bổ MRP theo Nhóm hàng + Nghịch lý Độ hiển thị quầy kệ
         dbc.Row([
             dbc.Col(
                 dbc.Card(dbc.CardBody([
@@ -108,7 +104,6 @@ def layout() -> html.Div:
             ),
         ], className="g-2 mb-2"),
 
-        # Bảng Insight Nghiệp vụ
         dbc.Card(dbc.CardBody([
             html.H6("💡 Insight Nghiệp vụ Trưng bày & Phân phối BigMart:", className="text-secondary fw-bold"),
             dbc.Table([

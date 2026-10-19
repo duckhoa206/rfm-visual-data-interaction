@@ -1,10 +1,4 @@
-"""Dịch vụ dữ liệu thuần pandas dùng chung cho Streamlit và Dash.
-
-QUAN TRỌNG: file này KHÔNG được import streamlit hay dash.
-Mọi logic đọc/lọc dữ liệu chỉ nằm ở đây; callbacks Dash gọi trực tiếp các hàm này.
-
-Nguồn duy nhất: data/processed/cleaned_data.csv (do scripts/clean_data.py sinh ra).
-"""
+"""Đọc và lọc dữ liệu đã xử lý, không phụ thuộc giao diện."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -54,13 +48,11 @@ def _read_orders_uncached() -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def load_orders() -> pd.DataFrame:
-    """Đọc bảng đơn hàng đã làm sạch kèm Manager nếu có (cache trong RAM)."""
     return _read_orders_uncached()
 
 
 @lru_cache(maxsize=1)
 def load_rfm() -> pd.DataFrame:
-    """Bảng RFM đầy đủ điểm số + segment (tải từ rfm_customers.csv hoặc tính mới)."""
     if RFM_DATA_PATH.exists() and RFM_DATA_PATH.stat().st_size > 0:
         return pd.read_csv(RFM_DATA_PATH)
     return build_rfm_table(load_orders())
@@ -68,7 +60,6 @@ def load_rfm() -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def load_walmart() -> pd.DataFrame:
-    """Đọc dữ liệu tuần Walmart đã nối (Train + Features + Stores)."""
     if not WALMART_DATA_PATH.exists():
         return pd.DataFrame()
     return pd.read_csv(WALMART_DATA_PATH, parse_dates=["Date"])
@@ -76,14 +67,12 @@ def load_walmart() -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def load_bigmart() -> pd.DataFrame:
-    """Đọc dữ liệu mặt hàng và điểm bán BigMart đã làm sạch."""
     if not BIGMART_DATA_PATH.exists():
         return pd.DataFrame()
     return pd.read_csv(BIGMART_DATA_PATH)
 
 
 def clear_cache() -> None:
-    """Xóa cache khi các file processed được tạo lại."""
     load_orders.cache_clear()
     load_rfm.cache_clear()
     load_walmart.cache_clear()
@@ -93,7 +82,6 @@ def clear_cache() -> None:
 def get_filter_options(
     orders: pd.DataFrame, rfm: pd.DataFrame
 ) -> dict:
-    """Trả về options cho filter bar dùng chung."""
     options = {
         "regions": sorted(orders["Region"].unique()),
         "countries": sorted(orders["Country"].unique()),
@@ -115,7 +103,6 @@ def get_countries_for_regions(
     regions: list,
     data_sources: list | None = None,
 ) -> list:
-    """Drill-down: quốc gia thuộc các khu vực đã chọn (dùng cho callback Region→Country)."""
     matching_orders = orders[orders["Region"].isin(regions)]
     if data_sources is not None and DATA_SOURCE_COLUMN in matching_orders.columns:
         matching_orders = matching_orders[

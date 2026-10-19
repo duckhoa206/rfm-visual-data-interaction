@@ -20,7 +20,6 @@ register_page(__name__, **PAGE_META["overview"])
 def layout() -> html.Div:
     return html.Div([
         html.H4("Tổng quan hiệu suất bán hàng", className="page-title"),
-        # KPI: 4 thẻ 1 hàng trên desktop, 2x2 trên mobile
         dbc.Row([
             dbc.Col(kpi_card("Tổng doanh thu", "kpi-sales"), xs=6, md=3),
             dbc.Col(kpi_card("Tổng lợi nhuận", "kpi-profit"), xs=6, md=3),
@@ -28,7 +27,6 @@ def layout() -> html.Div:
             dbc.Col(kpi_card("Số khách hàng", "kpi-customers"), xs=6, md=3),
         ], class_name="g-2 kpi-row"),
         dbc.Alert(id="overview-alert", color="warning", is_open=False, class_name="mb-2"),
-        # 2 biểu đồ cạnh nhau, mỗi chart 1 card riêng
         dbc.Row(
             [
                 dbc.Col(
@@ -48,7 +46,6 @@ def layout() -> html.Div:
             ],
             class_name="g-2 mb-2",
         ),
-        # Biểu đồ hiệu suất Quản lý khu vực (từ bảng People)
         dbc.Card(dbc.CardBody([
             html.Div([html.H5("Hiệu suất Quản lý Khu vực (Regional Manager Performance)", className="chart-title"), html.Button([html.I(className="bi bi-arrows-fullscreen"), " Mở rộng"], id="overview-expand-manager", n_clicks=0, className="chart-expand")], className="chart-head"),
             html.P("So sánh Doanh thu ($) và Lợi nhuận ($) của từng Quản lý phụ trách vùng thị trường (nguồn People nối vào Đơn hàng)",

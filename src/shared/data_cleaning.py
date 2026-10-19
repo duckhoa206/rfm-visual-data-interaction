@@ -13,7 +13,6 @@ REQUIRED_COLUMNS = [
 ]
 DATA_SOURCE_COLUMN = "Data Source"
 
-# Các tên cột thường gặp trong CSV thật. Có thể bổ sung khi nhóm nhận dataset.
 COLUMN_ALIASES = {
     "order id": "Order ID",
     "order_id": "Order ID",

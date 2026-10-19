@@ -1,8 +1,4 @@
-"""Khung Hub-and-Spoke: sidebar trái liền khối (thương hiệu + điều hướng)
-+ cột nội dung (bộ lọc gọn + trang).
-
-Chạy:  python src/dash_app/app.py   →  http://127.0.0.1:8050
-"""
+"""Ứng dụng Dash phân tích bán hàng và khách hàng RFM."""
 
 import os
 from pathlib import Path
@@ -37,9 +33,7 @@ app.layout = dbc.Container(
         dcc.Store(id="sidebar-store", data=False),
         html.Div(
             [
-                # Trái: thương hiệu + điều hướng liền một khối
                 sidebar.layout(),
-                # Phải: bộ lọc gọn + nội dung trang
                 html.Div(
                     [
                         dbc.Card(

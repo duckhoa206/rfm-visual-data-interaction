@@ -15,7 +15,6 @@ def layout() -> html.Div:
     return html.Div([
         html.H4("Phân tích", className="page-title"),
         dbc.Alert(id="geo-alert", color="warning", is_open=False, class_name="mb-2"),
-        # Hàng 1: bản đồ cần full-width (rộng để thấy các quốc gia)
         dbc.Card(dbc.CardBody([
             html.Div([html.H5("Bản đồ doanh thu theo quốc gia", className="chart-title"), html.Button([html.I(className="bi bi-arrows-fullscreen"), " Mở rộng"], id="geo-expand-map", n_clicks=0, className="chart-expand")], className="chart-head"),
             html.P("Màu đậm = doanh thu cao, hover để xem số liệu từng nước",
@@ -23,7 +22,6 @@ def layout() -> html.Div:
             dcc.Graph(id="geo-choropleth", config={"displaylogo": False},
                       style={"height": 480}),
         ]), className="section-card"),
-        # Hàng 2: treemap cần rộng hơn (7) + heatmap gọn (5)
         dbc.Row(
             [
                 dbc.Col(
