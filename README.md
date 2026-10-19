@@ -31,7 +31,7 @@ Dữ liệu được làm sạch và lưu trong `data/processed/`. Thông tin ng
 
 ## Cài đặt và chạy
 
-### Linux (máy hiện tại)
+### Linux 
 
 ```bash
 python3 -m venv .venv
@@ -88,4 +88,3 @@ docs/               Tài liệu nguồn dữ liệu và phân công
 ## Lưu ý
 
 - Nguồn Kaggle Global Electronics Retail 2019–2020 chưa xác minh được nguồn giao dịch gốc, nên chỉ dùng như dữ liệu tham khảo/demo.
-- File `forecast_output.html` là kết quả tạo thêm khi chạy thử mô hình, không phải file cần thiết để chạy Dashboard.
