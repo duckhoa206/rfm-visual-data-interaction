@@ -31,7 +31,7 @@ Dữ liệu được làm sạch và lưu trong `data/processed/`. Thông tin ng
 
 ## Cài đặt và chạy
 
-### Linux 
+### Linux
 
 ```bash
 python3 -m venv .venv
@@ -52,7 +52,6 @@ source .venv/bin/activate
 python src/dash_app/app.py
 ```
 
-Không sao chép `.venv` giữa các máy; tạo lại môi trường và cài thư viện.
 Cấu hình triển khai trong repo sử dụng Python 3.12.8.
 
 ### Windows
