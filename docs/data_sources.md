@@ -8,14 +8,14 @@ python scripts\clean_data.py
 
 ## Các nguồn dùng cho Dashboard
 
-| Nguồn | Thời gian | Mục đích |
-|---|---:|---|
-| Global Superstore | 2012–2015 | Đơn hàng bán lẻ quốc tế |
-| Superstore | 2015–2018 | Bổ sung dữ liệu bán hàng |
-| Global Electronics Retail trên Kaggle | 2019–2020 | Dữ liệu tham khảo/demo |
-| Superstore | 2021–2024 | Dữ liệu bán hàng Mỹ và Canada |
-| Walmart | Theo tuần | Doanh số, cửa hàng và biến kinh tế |
-| BigMart | Không có thời gian | Sản phẩm và điểm bán FMCG |
+| Nguồn                                 |            Thời gian | Mục đích                              |
+| -------------------------------------- | --------------------: | ---------------------------------------- |
+| Global Superstore                      |            2012–2015 | Đơn hàng bán lẻ quốc tế           |
+| Superstore                             |            2015–2018 | Bổ sung dữ liệu bán hàng            |
+| Global Electronics Retail trên Kaggle |            2019–2020 | Dữ liệu tham khảo/demo                |
+| Superstore                             |            2021–2024 | Dữ liệu bán hàng Mỹ và Canada      |
+| Walmart                                |            Theo tuần | Doanh số, cửa hàng và biến kinh tế |
+| BigMart                                | Không có thời gian | Sản phẩm và điểm bán FMCG          |
 
 ## Giới hạn dữ liệu
 

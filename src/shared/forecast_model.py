@@ -1,4 +1,4 @@
-"""Chuỗi tháng đồng nhất nguồn và hồi quy xu thế + mùa vụ cộng tính."""
+"""Chuỗi tháng đồng nhất nguồn và hồi quy panel theo thời gian-khu vực."""
 
 import numpy as np
 import pandas as pd
@@ -55,6 +55,69 @@ def predict_monthly_sales(history: pd.DataFrame, dates) -> np.ndarray:
     return np.maximum(0, design(dates) @ coefficients)
 
 
+def _regional_monthly_orders(orders: pd.DataFrame, history: pd.DataFrame) -> pd.DataFrame:
+    """Tạo panel tháng-khu vực trong đúng đoạn nguồn đồng nhất của lịch sử."""
+    if "Region" not in orders.columns or not orders["Region"].notna().any():
+        return pd.DataFrame(columns=["Order Date", "Region", "Sales"])
+
+    frame = orders.copy()
+    frame["Order Date"] = pd.to_datetime(frame["Order Date"]).dt.to_period("M").dt.to_timestamp()
+    frame = frame[frame["Order Date"].between(
+        history["Order Date"].iloc[0], history["Order Date"].iloc[-1]
+    )]
+    sources = history["Sources"].iloc[-1]
+    if sources and "Data Source" in frame.columns:
+        frame = frame[frame["Data Source"].isin(sources)]
+
+    regions = sorted(frame["Region"].dropna().unique())
+    if not regions:
+        return pd.DataFrame(columns=["Order Date", "Region", "Sales"])
+    index = pd.MultiIndex.from_product(
+        [history["Order Date"], regions], names=["Order Date", "Region"]
+    )
+    return (
+        frame.groupby(["Order Date", "Region"])["Sales"].sum()
+        .reindex(index, fill_value=0.0)
+        .rename("Sales")
+        .reset_index()
+    )
+
+
+def _predict_regional_sales(history: pd.DataFrame, dates) -> pd.DataFrame:
+    """Hồi quy panel với mùa vụ, mức nền và xu thế riêng theo khu vực."""
+    regions = sorted(history["Region"].unique())
+    origin = history["Order Date"].min()
+    seasonal = history["Order Date"].drop_duplicates().dt.month.value_counts().reindex(
+        range(1, 13), fill_value=0
+    ).min() >= 2
+
+    def design(frame):
+        values = pd.DatetimeIndex(frame["Order Date"])
+        elapsed = np.asarray(
+            (values.year - origin.year) * 12 + values.month - origin.month,
+            dtype=float,
+        )
+        columns = []
+        for region in regions:
+            indicator = frame["Region"].eq(region).to_numpy(dtype=float)
+            columns.extend([indicator, indicator * elapsed])
+            if seasonal:
+                columns.extend(
+                    indicator * (values.month == month).astype(float)
+                    for month in range(2, 13)
+                )
+        return np.column_stack(columns)
+
+    coefficients = np.linalg.lstsq(
+        design(history), history["Sales"].to_numpy(), rcond=None
+    )[0]
+    target = pd.MultiIndex.from_product(
+        [pd.DatetimeIndex(dates), regions], names=["Order Date", "Region"]
+    ).to_frame(index=False)
+    target["Base"] = np.maximum(0, design(target) @ coefficients)
+    return target
+
+
 def make_forecast_projection(
     orders: pd.DataFrame,
     start_date=None,
@@ -71,8 +134,8 @@ def make_forecast_projection(
     if orders.empty:
         raise ValueError("Không có dữ liệu khớp với bộ lọc chính.")
     history = comparable_monthly_orders(orders)
-    if len(history) < 5:
-        raise ValueError("Cần tối thiểu 5 tháng liên tục có cùng nguồn dữ liệu để huấn luyện và kiểm thử. Hãy mở rộng bộ lọc chính.")
+    if len(history) < 12:
+        raise ValueError("Cần tối thiểu 12 tháng liên tục có cùng nguồn dữ liệu để huấn luyện và kiểm thử. Hãy mở rộng bộ lọc chính.")
 
     first = history["Order Date"].iloc[0]
     last = history["Order Date"].iloc[-1]
@@ -86,11 +149,24 @@ def make_forecast_projection(
     test_len = min(12, max(3, len(history) // 5))
     train = history.iloc[:-test_len].copy()
     test = history.iloc[-test_len:].copy()
-    test["Prediction"] = predict_monthly_sales(train, test["Order Date"])
+    regional_history = _regional_monthly_orders(orders, history)
+    if regional_history.empty:
+        test["Prediction"] = predict_monthly_sales(train, test["Order Date"])
+    else:
+        regional_train = _regional_monthly_orders(orders, train)
+        regional_test = _predict_regional_sales(regional_train, test["Order Date"])
+        test_predictions = regional_test.groupby("Order Date")["Base"].sum()
+        test["Prediction"] = test["Order Date"].map(test_predictions)
     errors = test["Sales"] - test["Prediction"]
 
     dates = pd.date_range(last + pd.DateOffset(months=1), end, freq="MS")
-    base = predict_monthly_sales(history, dates)
+    if regional_history.empty:
+        base = predict_monthly_sales(history, dates)
+        future_by_region = pd.DataFrame(columns=["Order Date", "Region", "Base"])
+    else:
+        future_by_region = _predict_regional_sales(regional_history, dates)
+        base_by_date = future_by_region.groupby("Order Date")["Base"].sum()
+        base = base_by_date.reindex(dates, fill_value=0.0).to_numpy()
     optimistic_weight = max(0.0, float(optimistic_weight))
     cautious_weight = max(0.0, min(0.95, float(cautious_weight)))
     future = pd.DataFrame({
@@ -101,6 +177,9 @@ def make_forecast_projection(
     })
     visible_history = history[history["Order Date"].between(start, end)].copy()
     visible_future = future[future["Order Date"].between(start, end)].copy()
+    visible_future_by_region = future_by_region[
+        future_by_region["Order Date"].between(start, end)
+    ].copy()
     if visible_history.empty and visible_future.empty:
         raise ValueError(f"Khoảng đang chọn không có dữ liệu trong chuỗi đồng nhất nguồn (bắt đầu {first:%m/%Y}). Hãy chọn khoảng khác hoặc đổi bộ lọc chính.")
 
@@ -124,7 +203,9 @@ def make_forecast_projection(
         "optimistic_weight": optimistic_weight,
         "cautious_weight": cautious_weight,
         "history": history, "train": train, "test": test, "future": future,
+        "future_by_region": future_by_region,
         "visible_history": visible_history, "visible_future": visible_future,
+        "visible_future_by_region": visible_future_by_region,
         "kpis": {
             "annual_2030": final_sales,
             "cum_sales": float(amounts["Sales"].sum()),
@@ -135,5 +216,6 @@ def make_forecast_projection(
             "last_year": last.year, "target_year": end.year,
             "training_start": first.isoformat(),
             "sources": list(history["Sources"].iloc[-1]),
+            "model_features": ["xu thế thời gian", "mùa vụ tháng", "khu vực"],
         },
     }

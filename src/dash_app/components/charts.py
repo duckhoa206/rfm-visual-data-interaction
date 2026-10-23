@@ -35,30 +35,79 @@ def blank_figure() -> go.Figure:
     return go.Figure()
 
 
-def build_bar_category(orders_filtered: pd.DataFrame) -> go.Figure:
+def build_bar_category(
+    orders_filtered: pd.DataFrame,
+    selected_categories: list[str] | None = None,
+) -> go.Figure:
     by_cat = orders_filtered.groupby("Category", as_index=False)["Sales"].sum()
     fig = px.bar(by_cat, x="Category", y="Sales", color="Category")
+    selected = set(selected_categories or [])
+    if selected:
+        for trace in fig.data:
+            trace.opacity = 1 if trace.name in selected else 0.25
+    fig.update_traces(
+        hovertemplate="%{x}<br>Doanh thu: $%{y:,.0f}<extra></extra>",
+    )
     apply_chart_theme(fig)
-    fig.update_layout(showlegend=False, margin=dict(l=12, r=12, t=16, b=84))
+    fig.update_layout(
+        showlegend=False,
+        clickmode="event+select",
+        margin=dict(l=12, r=12, t=16, b=84),
+    )
     fig.update_xaxes(tickangle=-15, automargin=True)
-    fig.update_yaxes(tickformat=",.0f")
+    fig.update_yaxes(tickformat="$,.0f")
     return fig
 
 
-def build_line_monthly(orders_filtered: pd.DataFrame) -> go.Figure:
-    monthly = (
-        orders_filtered.set_index("Order Date")
-        .resample("MS")
-        .agg(Sales=("Sales", "sum"), Rows=("Sales", "size"))
-        .reset_index()
-    )
-    monthly.loc[monthly["Rows"] == 0, "Sales"] = np.nan
-    fig = px.line(monthly, x="Order Date", y="Sales", markers=True)
+def build_line_monthly(
+    orders_filtered: pd.DataFrame,
+    categories: list[str] | None = None,
+) -> go.Figure:
+    selected = list(dict.fromkeys(categories or []))
+    if selected:
+        series = []
+        for category, frame in orders_filtered[orders_filtered["Category"].isin(selected)].groupby("Category"):
+            monthly_category = (
+                frame.set_index("Order Date")
+                .resample("MS")
+                .agg(Sales=("Sales", "sum"), Rows=("Sales", "size"))
+                .reset_index()
+            )
+            monthly_category.loc[monthly_category["Rows"] == 0, "Sales"] = np.nan
+            monthly_category["Category"] = category
+            series.append(monthly_category)
+        if not series:
+            return blank_figure()
+        monthly = pd.concat(series, ignore_index=True)
+        fig = px.line(
+            monthly,
+            x="Order Date",
+            y="Sales",
+            color="Category",
+            markers=True,
+            labels={"Category": "Danh mục"},
+        )
+    else:
+        monthly = (
+            orders_filtered.set_index("Order Date")
+            .resample("MS")
+            .agg(Sales=("Sales", "sum"), Rows=("Sales", "size"))
+            .reset_index()
+        )
+        monthly.loc[monthly["Rows"] == 0, "Sales"] = np.nan
+        fig = px.line(monthly, x="Order Date", y="Sales", markers=True)
     fig.update_traces(connectgaps=False)
-    fig.update_traces(line=dict(width=3))
+    fig.update_traces(
+        line=dict(width=3),
+        hovertemplate="%{x|%m/%Y}<br>Doanh thu: $%{y:,.0f}<extra>%{fullData.name}</extra>",
+    )
     apply_chart_theme(fig)
-    fig.update_layout(showlegend=False, margin=dict(l=12, r=12, t=16, b=48))
-    fig.update_yaxes(tickformat=",.0f")
+    fig.update_layout(
+        showlegend=bool(selected),
+        margin=dict(l=12, r=12, t=16, b=72 if selected else 48),
+        legend=dict(orientation="h", y=-0.2),
+    )
+    fig.update_yaxes(tickformat="$,.0f")
     return fig
 
 
@@ -145,34 +194,47 @@ def build_forecast_figure(orders_filtered: pd.DataFrame, test_months: int = 3, f
     return fig, caption
 
 
-def build_manager_performance(orders_filtered: pd.DataFrame) -> go.Figure:
-    if orders_filtered.empty or "Manager" not in orders_filtered.columns:
+def build_region_performance(
+    orders_filtered: pd.DataFrame,
+    selected_region: str | None = None,
+    max_regions: int = 12,
+) -> go.Figure:
+    if orders_filtered.empty or "Region" not in orders_filtered.columns:
         return blank_figure()
-    df_mgr = orders_filtered.dropna(subset=["Manager"])
-    if df_mgr.empty:
-        return blank_figure()
-    summary = df_mgr.groupby("Manager", as_index=False).agg(
+    summary = orders_filtered.dropna(subset=["Region"]).groupby("Region", as_index=False).agg(
         Sales=("Sales", "sum"),
         Profit=("Profit", "sum"),
-    ).sort_values("Sales", ascending=True)
+    )
+    if summary.empty:
+        return blank_figure()
+
+    visible = summary.nlargest(max_regions, "Sales")
+    if selected_region and selected_region in set(summary["Region"]) and selected_region not in set(visible["Region"]):
+        visible = pd.concat([
+            visible.nlargest(max_regions - 1, "Sales"),
+            summary[summary["Region"] == selected_region],
+        ])
+    visible = visible.sort_values("Sales", ascending=True)
+    selected_mask = visible["Region"].eq(selected_region)
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        y=summary["Manager"], x=summary["Sales"],
+        y=visible["Region"], x=visible["Sales"],
         orientation="h", name="Doanh thu ($)",
-        marker=dict(color="#0284C7"),
+        marker=dict(color=["#0C4A6E" if selected else "#0284C7" for selected in selected_mask]),
         hovertemplate="%{y}<br>Doanh thu: $%{x:,.0f}<extra></extra>",
     ))
     fig.add_trace(go.Bar(
-        y=summary["Manager"], x=summary["Profit"],
+        y=visible["Region"], x=visible["Profit"],
         orientation="h", name="Lợi nhuận ($)",
-        marker=dict(color="#10B981"),
+        marker=dict(color=["#047857" if selected else "#10B981" for selected in selected_mask]),
         hovertemplate="%{y}<br>Lợi nhuận: $%{x:,.0f}<extra></extra>",
     ))
     apply_chart_theme(fig)
     fig.update_layout(
         barmode="group",
         hovermode="y unified",
+        clickmode="event+select",
         margin=dict(l=12, r=12, t=16, b=48),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )

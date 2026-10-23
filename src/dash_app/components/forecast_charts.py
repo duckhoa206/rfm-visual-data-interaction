@@ -162,16 +162,15 @@ def build_regional_forecast_figure(orders_filtered, target_year=2030, projection
         return go.Figure()
     scope = _orders_scope(orders_filtered, p)
     recent = _recent_orders(scope, p).groupby("Region")["Sales"].sum()
-    top = recent.nlargest(6).index
-    shares = recent / recent.sum() if recent.sum() > 0 else recent * 0
     actual = scope[scope["Month"].between(p["start"], p["end"])].groupby("Region")["Sales"].sum()
-    predicted = float(p["visible_future"]["Base"].sum())
+    predicted = p["visible_future_by_region"].groupby("Region")["Base"].sum()
+    top = recent.add(predicted, fill_value=0).nlargest(6).index
     rows = []
     for region in top:
         if not p["visible_history"].empty:
             rows.append({"Khu vực": region, "Loại": "Thực tế trong khoảng", "Doanh thu": float(actual.get(region, 0))})
         if not p["visible_future"].empty:
-            rows.append({"Khu vực": region, "Loại": "Dự báo trong khoảng", "Doanh thu": float(predicted * shares[region])})
+            rows.append({"Khu vực": region, "Loại": "Dự báo trong khoảng", "Doanh thu": float(predicted.get(region, 0))})
     if not rows:
         return go.Figure()
     fig = px.bar(pd.DataFrame(rows), x="Khu vực", y="Doanh thu", color="Loại", barmode="group",

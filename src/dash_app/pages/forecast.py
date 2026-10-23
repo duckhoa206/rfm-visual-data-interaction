@@ -20,16 +20,26 @@ register_page(__name__, **PAGE_META["forecast"])
 
 DEFAULT_START_YEAR = pd.Timestamp(ORDERS["Order Date"].max()).year + 1
 MAX_YEAR = max(2040, DEFAULT_START_YEAR + 10)
+ALL_FORECAST_REGIONS = "__ALL_FORECAST_REGIONS__"
 
 
-def _filtered_orders(store):
+def _filtered_orders(store, forecast_region=ALL_FORECAST_REGIONS):
     store = store or {}
     orders_f, _ = data_service.apply_filters(
         ORDERS, RFM, regions=store.get("regions"), countries=store.get("countries"),
         start_date=store.get("start"), end_date=store.get("end"),
         segments=store.get("segments"), data_sources=store.get("data_sources"),
     )
+    if forecast_region not in (None, ALL_FORECAST_REGIONS):
+        orders_f = orders_f[orders_f["Region"] == forecast_region]
     return orders_f
+
+
+def _region_options(orders):
+    return [{"label": "Tất cả khu vực trong bộ lọc", "value": ALL_FORECAST_REGIONS}] + [
+        {"label": str(region), "value": region}
+        for region in sorted(orders["Region"].dropna().unique())
+    ]
 
 
 def _period_from_value(value, fallback):
@@ -128,9 +138,20 @@ def layout() -> html.Div:
         ]),
         dbc.Card(dbc.CardBody([
             html.Div([
-                html.H5("Khoảng thời gian dự báo", className="chart-title forecast-range-title"),
+                html.H5("Đầu vào mô hình dự báo", className="chart-title forecast-range-title"),
                 html.Div([
-                    html.Label("Năm bắt đầu – Năm kết thúc", htmlFor="forecast-period-select", className="filter-label"),
+                    html.Label("Khu vực dự báo", htmlFor="forecast-region-select", className="filter-label"),
+                    dcc.Dropdown(
+                        id="forecast-region-select",
+                        options=_region_options(ORDERS),
+                        value=ALL_FORECAST_REGIONS,
+                        clearable=False,
+                        searchable=True,
+                        className="pro-dropdown forecast-region-select",
+                    ),
+                ], className="forecast-region-field"),
+                html.Div([
+                    html.Label("Thời gian dự báo", htmlFor="forecast-period-select", className="filter-label"),
                     dbc.Select(id="forecast-period-select", options=options, value=selected,
                                class_name="forecast-period-select"),
                 ], className="forecast-period-field"),
@@ -204,7 +225,7 @@ def layout() -> html.Div:
                 dbc.Card(dbc.CardBody([
                     html.Div([html.H5("Doanh thu theo khu vực", id="forecast-region-title", className="chart-title"), html.Button([html.I(className="bi bi-arrows-fullscreen"), " Mở rộng"], id="forecast-expand-region", n_clicks=0, className="chart-expand")], className="chart-head"),
                     html.P(
-                        "Thực tế và dự báo trong khoảng chọn; phân bổ theo tỷ trọng 12 tháng gần nhất, hiển thị tối đa 6 khu vực.",
+                        "Thực tế và dự báo từ mô hình xu thế, mùa vụ và hiệu ứng khu vực; hiển thị tối đa 6 khu vực.",
                         className="section-subtitle mb-2",
                     ),
                     dcc.Graph(id="forecast-region-graph", config={"displaylogo": False}, style={"height": 380}),
@@ -240,8 +261,8 @@ def layout() -> html.Div:
             html.Div([
                 html.H6("📌 Phương pháp luận & Lưu ý nguồn dữ liệu:", className="text-secondary fw-bold"),
                 html.Ul([
-                    html.Li("Huấn luyện trên đoạn tháng liên tục cuối cùng có cùng tập nguồn. Xu thế và hiệu ứng tháng được ước lượng cùng lúc; chỉ dùng mùa vụ khi có ít nhất 2 quan sát cho mỗi tháng."),
-                    html.Li("Các biểu đồ và KPI dùng cùng dự báo cơ sở, cùng khoảng năm. Ngành hàng/khu vực giữ tỷ trọng gần nhất; sản lượng/lợi nhuận giữ tỷ lệ gần nhất. Đây là giả định phân bổ, không phải mô hình riêng cho từng nhóm."),
+                    html.Li("Huấn luyện trên đoạn tháng liên tục cuối cùng có cùng tập nguồn. Mô hình dùng xu thế thời gian, mùa vụ tháng, mức nền và xu thế riêng theo khu vực; chỉ dùng mùa vụ khi có ít nhất 2 quan sát cho mỗi tháng."),
+                    html.Li("Các biểu đồ và KPI dùng cùng dự báo cơ sở, cùng khoảng năm. Ngành hàng giữ tỷ trọng gần nhất; sản lượng/lợi nhuận giữ tỷ lệ gần nhất. Khu vực được dự báo trực tiếp từ mô hình panel tháng-khu vực."),
                     html.Li("Bộ lọc riêng lấy từ tháng 1 năm bắt đầu đến hết tháng 12 năm kết thúc; không cắt dữ liệu huấn luyện. MAE không đổi nếu chỉ đổi khoảng xem."),
                     html.Li("Đánh giá mô hình kiểm thử độc lập (Time-based Split) trên các tháng gần nhất để cung cấp chỉ số MAE và RMSE trung thực, khách quan."),
                     html.Li("Nguồn dữ liệu Kaggle 2019–2020 (nếu chọn trong bộ lọc) là tập dữ liệu thử nghiệm có quy mô lớn; khi cần phân tích xu hướng thị trường chuẩn hóa, người dùng nên chọn nguồn Superstore qua bộ lọc nguồn ở thanh điều hướng.")
@@ -273,15 +294,16 @@ def layout() -> html.Div:
     Output("forecast-plan-title", "children"),
     Output("forecast-plan-body", "children"),
     Input("filter-store", "data"),
+    Input("forecast-region-select", "value"),
     Input("forecast-period-state", "data"),
     Input("forecast-optimistic-slider", "value"),
     Input("forecast-cautious-slider", "value"),
 )
-def _update(store, period, optimistic_weight, cautious_weight):
+def _update(store, forecast_region, period, optimistic_weight, cautious_weight):
     if not store:
         return (no_update,) * 19
 
-    orders_f = _filtered_orders(store)
+    orders_f = _filtered_orders(store, forecast_region)
     _, _, period = _period_choices(orders_f, period)
     start = pd.Timestamp(period["start_year"], 1, 1)
     end = pd.Timestamp(period["start_year"] + period["years"] - 1, 12, 31)
@@ -325,6 +347,21 @@ def _update(store, period, optimistic_weight, cautious_weight):
 
 
 @callback(
+    Output("forecast-region-select", "options"),
+    Output("forecast-region-select", "value"),
+    Output("forecast-region-select", "disabled"),
+    Input("filter-store", "data"),
+    State("forecast-region-select", "value"),
+)
+def _sync_regions(store, selected):
+    orders_f = _filtered_orders(store)
+    options = _region_options(orders_f)
+    values = {option["value"] for option in options}
+    selected = selected if selected in values else ALL_FORECAST_REGIONS
+    return options, selected, len(options) == 1
+
+
+@callback(
     Output("forecast-period-select", "options"),
     Output("forecast-period-select", "value"),
     Output("forecast-period-select", "disabled"),
@@ -333,6 +370,7 @@ def _update(store, period, optimistic_weight, cautious_weight):
     Output("forecast-range-60", "className"),
     Output("forecast-range-120", "className"),
     Input("filter-store", "data"),
+    Input("forecast-region-select", "value"),
     Input("forecast-period-select", "value"),
     Input("forecast-range-36", "n_clicks"),
     Input("forecast-range-60", "n_clicks"),
@@ -340,7 +378,7 @@ def _update(store, period, optimistic_weight, cautious_weight):
     Input("forecast-range-reset", "n_clicks"),
     State("forecast-period-state", "data"),
 )
-def _sync_period(store, value, _three_years, _five_years, _ten_years, _reset, period):
+def _sync_period(store, forecast_region, value, _three_years, _five_years, _ten_years, _reset, period):
     period = _period_from_value(value, period)
     if ctx.triggered_id == "forecast-range-reset":
         period = {"years": 1}
@@ -348,7 +386,7 @@ def _sync_period(store, value, _three_years, _five_years, _ten_years, _reset, pe
         years = {"forecast-range-36": 3, "forecast-range-60": 5, "forecast-range-120": 10}
         if ctx.triggered_id in years:
             period["years"] = years[ctx.triggered_id]
-    options, selected, period = _period_choices(_filtered_orders(store), period)
+    options, selected, period = _period_choices(_filtered_orders(store, forecast_region), period)
     classes = tuple("filter-reset is-active" if period["years"] == years else "filter-reset"
                     for years in (3, 5, 10))
     return options, selected, not bool(options), period, *classes
